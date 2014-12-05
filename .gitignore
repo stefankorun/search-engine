@@ -1,0 +1,7 @@
+/.c9
+/.idea
+/app/db/html
+/node_modules
+
+
+mongod.log

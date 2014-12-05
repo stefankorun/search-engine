@@ -1,0 +1,17 @@
+{
+  "name": "search_engine",
+  "version": "0.1.0",
+  "description": "Simple search engine with node.js",
+  "main": "app/engine.js",
+  "repository": "",
+  "author": "Stefan K",
+  "dependencies": {
+    "async": "latest",
+    "lodash": "latest",
+    "cheerio": "latest",
+    "request": "latest",
+    "q": "latest",
+    "mongodb": "latest",
+    "mongoose": "latest"
+  }
+}
