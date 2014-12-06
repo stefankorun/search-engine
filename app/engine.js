@@ -1,27 +1,42 @@
 // imports
-var request = require("request");
 var fs = require('fs');
-var cheerio = require('cheerio');
+var _ = require('lodash');
 
 var config = {
-    baseUrl: 'http://arhiva.plusinfo.mk/vest/',
-    reqStart: 30000,
-    reqEnd: 40000 // number of requests
+    fileDir: 'db/html/'
 };
-for (var i = config.reqStart; i < config.reqEnd; i++) {
-    sendRequest(config.baseUrl, i);
-}
-function sendRequest(baseUrl, i) {
-    request.get(baseUrl + i + '/', function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            var html = cheerio.load(body);
-            var text = html('.glavenText').text();
-            if (text) {
-                fs.writeFile("db/html/file" + i, text, function (err) {
-                    if (err) console.log(err);
-                    else console.log(i, "The file was saved!");
-                });
+console.time('fileRead');
+
+var MEGA_VAR = {};
+fs.readdir(config.fileDir, function (err, files) {
+    if (err) throw err;
+    files.forEach(function (file, key) {
+        file = config.fileDir + file;
+        fs.readFile(file, 'utf8', function (err, data) {
+            if (files.length == (key + 1)) {
+                console.timeEnd('fileRead');
             }
+            if (err) return err;
+            data = data.replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/gi, '')
+                .toLowerCase()
+                .split(' ');
+            saveWordArray(data, key);
+        });
+    })
+});
+
+
+// helpers
+function saveWordArray(array, docID) {
+    var preventRepeat = {};
+    array.forEach(function (word) {
+        if (word.length > 3 && !preventRepeat[word]) {
+            if (!MEGA_VAR[word]) MEGA_VAR[word] = '';
+            preventRepeat[word] = true;
+            MEGA_VAR[word] += (':' + docID);
         }
-    });
+    })
 }
+setTimeout(function () {
+    console.log(Object.keys(MEGA_VAR));
+}, 10000);
