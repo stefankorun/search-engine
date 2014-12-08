@@ -1,53 +1,49 @@
 // imports
 var fs = require('fs');
+var async = require('async');
 var _ = require('lodash');
 
 var config = {
     fileDir: 'db/html/'
 };
 console.time('fileRead');
-
 var MEGA_VAR = {};
-readAsync();
 
+startFileProcessing();
+function startFileProcessing() {
+    var files = fs.readdirSync(config.fileDir);
+    console.log('reading', files.length, 'files');
 
-function readAsync() {
-    fs.readdir(config.fileDir, function (err, files) {
-        if (err) throw err;
-        console.log('reading', files.length, 'files');
-        files.forEach(function (file, key) {
-            file = config.fileDir + file;
-            fs.readFile(file, 'utf8', function (err, data) {
-                if (files.length == (key + 1)) {
-                    console.timeEnd('fileRead');
-                }
-                if (err) {
-                    console.log(err);
-                    return -1;
-                }
-                data = data.replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/gi, ' ')
-                    .toLowerCase()
-                    .split(' ');
-                saveWordArray(data, key);
-            });
-        })
+    var queueArray = [];
+    files.forEach(function (file, key) {
+        file = config.fileDir + file;
+        readFileSync(file, key);
+    });
+    console.log(Object.keys(MEGA_VAR).length);
+    console.timeEnd('fileRead');
+}
+
+function readFile(file, key) {
+    fs.readFile(file, 'utf8', function (err, data) {
+        if (files.length == (key + 1)) {
+            console.timeEnd('fileRead');
+        }
+        if (err) {
+            console.log(err);
+            return -1;
+        }
+        data = data.replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/gi, ' ')
+            .toLowerCase()
+            .split(' ');
+        saveWordArray(data, key);
     });
 }
-function readSync() {
-    fs.readdir(config.fileDir, function (err, files) {
-        if (err) throw err;
-        console.log('reading', files.length, 'files');
-        files.forEach(function (file, key) {
-            if(key > 1500) return;
-            file = config.fileDir + file;
-            data = fs.readFileSync(file, {encoding: 'utf8'});
-            /*data = data.replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/gi, ' ')
-                .toLowerCase()
-                .split(' ');
-            saveWordArray(data, key);*/
-        });
-        console.timeEnd('fileRead');
-    });
+function readFileSync(file, key) {
+    data = fs.readFileSync(file, {encoding: 'utf8'});
+    data = data.replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/gi, ' ')
+     .toLowerCase()
+     .split(' ');
+     saveWordArray(data, key);
 }
 
 
