@@ -11,7 +11,8 @@ var config = {
 var MEGA_VAR = {};
 
 //startFileProcessing();
-searchMongo(['вапила', 'сирула']);
+//searchMongo(['вапила', 'сирула']);
+arrayIntersection([[1, 2, 3], [1]]);
 
 function startFileProcessing() {
     console.time('fileProcessing');
@@ -33,6 +34,7 @@ function startFileProcessing() {
             .split(' ');
         saveWordArray(data, key);
     }
+
     function saveVarToMongo() {
         MongoClient.connect("mongodb://localhost:27017/search-engine", function (err, db) {
             if (err) console.log(err);
@@ -48,6 +50,7 @@ function startFileProcessing() {
             });
         });
     }
+
     function saveWordArray(array, docID) {
         var preventRepeat = {};
         array.forEach(function (word) {
@@ -73,11 +76,11 @@ function searchMongo(words) {
         words.forEach(function (word) {
             var def = Q.defer();
             promises.push(def.promise);
-            collection.findOne({word: word}, function(err, item) {
+            collection.findOne({word: word}, function (err, item) {
                 def.resolve(item);
             });
         });
-        Q.all(promises).then(function(data) {
+        Q.all(promises).then(function (data) {
             data = _.map(data, function (item) {
                 return item.index.split(':');
             });
@@ -87,5 +90,36 @@ function searchMongo(words) {
     });
 
 }
+function arrayIntersection(arrs) {
+    var LinkedArray = function (a) {
+        var array = a;
+        var index = -1;
+
+        return {
+            getCurrent: function () {
+                return array[index];
+            },
+            getNext: function () {
+                return array[++index];
+            },
+            isLast: function () {
+                return array.length <= index;
+            }
+        }
+    };
+    function isItTheEnd(linkedArrays) {
+        linkedArrays.forEach(function (arr) {
+            if(!arr.isLast()) return false;
+        });
+    }
+
+    arrs = _.map(arrs, function(arr) {
+        return new LinkedArray(arr);
+    });
+
+
+    console.log(arrs);
+}
+
 
 
