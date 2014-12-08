@@ -1,7 +1,7 @@
 var MongoClient = require('mongodb').MongoClient;
 
 // Connect to the db
-MongoClient.connect("mongodb://localhost:27017", function(err, db) {
+MongoClient.connect("mongodb://localhost:27017", {db: 'search-engine'}, function(err, db) {
     if(err) { return console.dir(err); }
 
     var collection = db.collection('perf-test');
@@ -9,7 +9,7 @@ MongoClient.connect("mongodb://localhost:27017", function(err, db) {
 
     console.time('mongo');
     var batch = collection.initializeUnorderedBulkOp({useLegacyOps: true});
-    var limit = 10000;
+    var limit = 10;
     for(var i = 0; i < limit; ++i) {
         var doc = {word: i, documents: []};
         for(var j = 0; j < limit; ++j) {

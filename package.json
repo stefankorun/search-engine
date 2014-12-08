@@ -11,7 +11,7 @@
     "lodash": "latest",
     "mongodb": "latest",
     "mongoose": "latest",
-    "q": "latest",
+    "q": "^1.1.2",
     "request": "latest"
   }
 }

@@ -1,66 +1,91 @@
 // imports
 var fs = require('fs');
-var async = require('async');
 var _ = require('lodash');
+var Q = require('q');
+var async = require('async');
+var MongoClient = require('mongodb').MongoClient;
 
 var config = {
     fileDir: 'db/html/'
 };
-console.time('fileRead');
 var MEGA_VAR = {};
 
-startFileProcessing();
+//startFileProcessing();
+searchMongo(['вапила', 'сирула']);
+
 function startFileProcessing() {
+    console.time('fileProcessing');
     var files = fs.readdirSync(config.fileDir);
     console.log('reading', files.length, 'files');
-
-    var queueArray = [];
     files.forEach(function (file, key) {
         file = config.fileDir + file;
         readFileSync(file, key);
     });
-    console.log(Object.keys(MEGA_VAR).length);
-    console.timeEnd('fileRead');
-}
+    console.timeEnd('fileProcessing');
+    saveVarToMongo();
 
-function readFile(file, key) {
-    fs.readFile(file, 'utf8', function (err, data) {
-        if (files.length == (key + 1)) {
-            console.timeEnd('fileRead');
-        }
-        if (err) {
-            console.log(err);
-            return -1;
-        }
+
+    // helpers
+    function readFileSync(file, key) {
+        data = fs.readFileSync(file, {encoding: 'utf8'});
         data = data.replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/gi, ' ')
             .toLowerCase()
             .split(' ');
         saveWordArray(data, key);
+    }
+    function saveVarToMongo() {
+        MongoClient.connect("mongodb://localhost:27017/search-engine", function (err, db) {
+            if (err) console.log(err);
+            var collection = db.collection('engine-test');
+            var batch = collection.initializeUnorderedBulkOp({useLegacyOps: true});
+
+            _.each(MEGA_VAR, function (index, word) {
+                batch.insert({word: word, index: index}, {w: 0}, function (err, result) {
+                });
+            });
+            batch.execute(function (err, result) {
+                console.timeEnd('fileProcessing');
+            });
+        });
+    }
+    function saveWordArray(array, docID) {
+        var preventRepeat = {};
+        array.forEach(function (word) {
+            if (word.length > 3 && !preventRepeat[word]) {
+                if (word.indexOf(' ') > 0) console.log(word);
+                if (!MEGA_VAR[word]) MEGA_VAR[word] = docID;
+                else MEGA_VAR[word] += (':' + docID);
+                preventRepeat[word] = true;
+            }
+        })
+    }
+}
+
+function searchMongo(words) {
+    console.time('mongoFind');
+    MongoClient.connect("mongodb://localhost:27017/search-engine", function (err, db) {
+        if (err) console.log(err);
+        if (!_.isArray(words)) return -1;
+
+        var collection = db.collection('engine-test');
+
+        var promises = [];
+        words.forEach(function (word) {
+            var def = Q.defer();
+            promises.push(def.promise);
+            collection.findOne({word: word}, function(err, item) {
+                def.resolve(item);
+            });
+        });
+        Q.all(promises).then(function(data) {
+            data = _.map(data, function (item) {
+                return item.index.split(':');
+            });
+            console.log(_.intersection.apply(_, data));
+            console.timeEnd('mongoFind');
+        });
     });
-}
-function readFileSync(file, key) {
-    data = fs.readFileSync(file, {encoding: 'utf8'});
-    data = data.replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/gi, ' ')
-     .toLowerCase()
-     .split(' ');
-     saveWordArray(data, key);
+
 }
 
-
-// helpers
-function saveWordArray(array, docID) {
-    var preventRepeat = {};
-    array.forEach(function (word) {
-        if (word.length > 3 && !preventRepeat[word]) {
-            if (word.indexOf(' ') > 0) console.log(word);
-            if (!MEGA_VAR[word]) MEGA_VAR[word] = '';
-            preventRepeat[word] = true;
-            MEGA_VAR[word] += (':' + docID);
-        }
-    })
-}
-
-/*setTimeout(function () {
- console.log(Object.keys(MEGA_VAR).length);
- }, 5000);*/
 
