@@ -10,16 +10,15 @@ var config = {
 };
 var MEGA_VAR = {};
 
-startFileProcessing();
+//startFileProcessing();
 //searchMongo(['вапила', 'сирула']);
-//arrayIntersection([[1, 2, 3], [1]]);
+arrayIntersection([[1, 2, 3], [1], [], [3, 8, 10]]);
 
 function startFileProcessing() {
     console.time('fileProcessing');
     var files = fs.readdirSync(config.fileDir);
     console.log('reading', files.length, 'files');
     files.forEach(function (file, key) {
-        if (key > 90) return;
         file = config.fileDir + file;
         readFileSync(file, key);
     });
@@ -36,22 +35,6 @@ function startFileProcessing() {
         saveWordArray(data, key);
     }
 
-    function saveVarToMongo() {
-        MongoClient.connect("mongodb://localhost:27017/search-engine", function (err, db) {
-            if (err) console.log(err);
-            var collection = db.collection('engine-test');
-            var batch = collection.initializeUnorderedBulkOp({useLegacyOps: true});
-z
-            _.each(MEGA_VAR, function (index, word) {
-                batch.insert({word: word, index: index}, {w: 0}, function (err, result) {
-                });
-            });
-            batch.execute(function (err, result) {
-                console.timeEnd('fileProcessing');
-            });
-        });
-    }
-
     function saveWordArray(array, docID) {
         var preventRepeat = {};
         array.forEach(function (word) {
@@ -63,6 +46,27 @@ z
             }
         })
     }
+
+    function saveVarToMongo() {
+        MongoClient.connect("mongodb://localhost:27017/search-engine", function (err, db) {
+            if (err) console.log(err);
+            var collection = db.collection('engine-test');
+            var batch = collection.initializeUnorderedBulkOp({useLegacyOps: true});
+            _.each(MEGA_VAR, function (index, word) {
+                batch.insert({word: word, index: index}, {w: 0}, function (err, result) {
+                });
+            });
+            batch.execute(function (err, result) {
+                console.timeEnd('fileProcessing');
+                collection.createIndex('word', function (err, result) {
+                    console.log(err, result);
+                    console.timeEnd('fileProcessing');
+                })
+            });
+        });
+    }
+
+
 }
 
 function searchMongo(words) {
@@ -98,6 +102,7 @@ function arrayIntersection(arrs) {
 
         return {
             getCurrent: function () {
+                if (index == -1) this.getNext();
                 return array[index];
             },
             getNext: function () {
@@ -108,18 +113,26 @@ function arrayIntersection(arrs) {
             }
         }
     };
+
     function isItTheEnd(linkedArrays) {
-        linkedArrays.forEach(function (arr) {
-            if(!arr.isLast()) return false;
-        });
+        for (var i in linkedArrays) {
+            if (!linkedArrays[i].isLast()) return false;
+        }
+        return true;
     }
 
-    arrs = _.map(arrs, function(arr) {
+    // od ovde pocit jakoto
+
+    arrs = _.map(arrs, function (arr) {
         return new LinkedArray(arr);
     });
 
-
-    console.log(arrs);
+    while (!isItTheEnd(arrs)) {
+        console.log('while');
+        _.each(arrs, function (la) {
+            console.log(la.getNext());
+        })
+    }
 }
 
 
