@@ -10,15 +10,16 @@ var config = {
 };
 var MEGA_VAR = {};
 
-//startFileProcessing();
+startFileProcessing();
 //searchMongo(['вапила', 'сирула']);
-arrayIntersection([[1, 2, 3], [1]]);
+//arrayIntersection([[1, 2, 3], [1]]);
 
 function startFileProcessing() {
     console.time('fileProcessing');
     var files = fs.readdirSync(config.fileDir);
     console.log('reading', files.length, 'files');
     files.forEach(function (file, key) {
+        if (key > 90) return;
         file = config.fileDir + file;
         readFileSync(file, key);
     });
@@ -28,7 +29,7 @@ function startFileProcessing() {
 
     // helpers
     function readFileSync(file, key) {
-        data = fs.readFileSync(file, {encoding: 'utf8'});
+        var data = fs.readFileSync(file, {encoding: 'utf8'});
         data = data.replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/gi, ' ')
             .toLowerCase()
             .split(' ');
@@ -40,7 +41,7 @@ function startFileProcessing() {
             if (err) console.log(err);
             var collection = db.collection('engine-test');
             var batch = collection.initializeUnorderedBulkOp({useLegacyOps: true});
-
+z
             _.each(MEGA_VAR, function (index, word) {
                 batch.insert({word: word, index: index}, {w: 0}, function (err, result) {
                 });
