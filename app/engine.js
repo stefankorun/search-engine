@@ -12,7 +12,7 @@ var MEGA_VAR = {};
 
 //startFileProcessing();
 //searchMongo(['вапила', 'сирула']);
-arrayIntersection([[1, 2, 3], [1], [], [3, 8, 10]]);
+arrayIntersection([[2, 3, 4], [3, 8, 10]]);
 
 function startFileProcessing() {
     console.time('fileProcessing');
@@ -98,15 +98,18 @@ function searchMongo(words) {
 function arrayIntersection(arrs) {
     var LinkedArray = function (a) {
         var array = a;
-        var index = -1;
+        var index = 0;
 
         return {
             getCurrent: function () {
-                if (index == -1) this.getNext();
                 return array[index];
             },
-            getNext: function () {
-                return array[++index];
+            incrementIndex: function (maxValue) {
+                if (array[index] && (array[index] < maxValue)) {
+                    index++;
+                    console.log('incrementing index', index);
+                }
+                return array[index];
             },
             isLast: function () {
                 return array.length <= index;
@@ -114,9 +117,17 @@ function arrayIntersection(arrs) {
         }
     };
 
-    function isItTheEnd(linkedArrays) {
+    function theEnd(linkedArrays) {
         for (var i in linkedArrays) {
             if (!linkedArrays[i].isLast()) return false;
+        }
+        return true;
+    }
+
+    function allEqual(linkedArrays) {
+        var value = linkedArrays[0].getCurrent();
+        for (var i in linkedArrays) {
+            if (linkedArrays[i].getCurrent() != value) return false;
         }
         return true;
     }
@@ -127,12 +138,19 @@ function arrayIntersection(arrs) {
         return new LinkedArray(arr);
     });
 
-    while (!isItTheEnd(arrs)) {
-        console.log('while');
-        _.each(arrs, function (la) {
-            console.log(la.getNext());
+    var results = [];
+    while (!theEnd(arrs)) {
+        if (allEqual(arrs)) results.push(arrs[0].getCurrent());
+        var maximum = _.max(arrs, function (arr) {
+            return arr.getCurrent();
+        });
+        maximum = maximum.getCurrent();
+
+        _.each(arrs, function (arr) {
+            arr.incrementIndex(maximum);
         })
     }
+    return results;
 }
 
 
