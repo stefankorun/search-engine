@@ -3,16 +3,18 @@ var fs = require('fs');
 var _ = require('lodash');
 var Q = require('q');
 var async = require('async');
+var asd = require('./memory');
 var MongoClient = require('mongodb').MongoClient;
 
+console.log(asd);
 var config = {
-    fileDir: 'db/html/'
+    fileDir: '../db/html/'
 };
 var MEGA_VAR = {};
 
 //startFileProcessing();
 //searchMongo(['вапила', 'сирула']);
-arrayIntersection([[2, 3, 4], [3, 8, 10]]);
+//arrayIntersection([[2, 3, 4], [3, 8, 10]]);
 
 function startFileProcessing() {
     console.time('fileProcessing');
@@ -65,8 +67,6 @@ function startFileProcessing() {
             });
         });
     }
-
-
 }
 
 function searchMongo(words) {
