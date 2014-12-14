@@ -2,7 +2,7 @@
 /.idea
 /node_modules
 
-/app/db/html
-/app/db/mongo
+/db/html
+/db/mongo
 
 mongod.log
