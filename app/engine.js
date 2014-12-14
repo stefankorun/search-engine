@@ -11,8 +11,8 @@ var config = {
 var MEGA_VAR = {};
 
 //startFileProcessing();
-//searchMongo(['вапила', 'сирула']);
-arrayIntersection([[2, 3, 4], [3, 8, 10]]);
+searchMongo(['софија', 'вергара']);
+//arrayIntersection([[2, 3, 4], [3, 8, 10]]);
 
 function startFileProcessing() {
     console.time('fileProcessing');
