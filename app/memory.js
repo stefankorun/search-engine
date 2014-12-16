@@ -1,7 +1,5 @@
-
-
 module.exports = function () {
 
 
-    return 'wow';
+  return 'wow';
 }();
