@@ -2,13 +2,13 @@
 var fs = require('fs');
 var _ = require('lodash');
 var Q = require('q');
-var async = require('async');
 var MongoClient = require('mongodb').MongoClient;
 
 var config = {
     fileDir: '../db/html/'
 };
-var MEGA_VAR = {};
+var wordINDEX = [];
+var wordCOUNT = [];
 
 startFileProcessing();
 //searchMongo(['софија', 'вергара']);
@@ -17,15 +17,17 @@ startFileProcessing();
 function startFileProcessing() {
     console.time('fileProcessing');
     var files = fs.readdirSync(config.fileDir);
+
     console.log('reading', files.length, 'files');
     files.forEach(function (file, key) {
-        if (key > 20000) return;
+        if (key > 1) return;
         file = config.fileDir + file;
         readFileSync(file, key);
     });
     console.timeEnd('fileProcessing');
-    saveVarToMongo();
 
+    //saveVarToMongo();
+    console.log(wordINDEX);
 
     // helpers
     function readFileSync(file, key) {
@@ -42,30 +44,19 @@ function startFileProcessing() {
             if (word.length > 3) {
                 if (!repeatCount[word]) {
                     repeatCount[word] = 1;
-                    if (!MEGA_VAR[word]) MEGA_VAR[word] = docID.toString();
-                    else MEGA_VAR[word] += (':' + docID);
+                    if (!wordINDEX[word]) wordINDEX[word] = docID.toString();
+                    else wordINDEX[word] += (':' + docID);
                 } else {
                     ++repeatCount[word];
                 }
             }
         });
-        for(var word in repeatCount) {
+        for (var word in repeatCount) {
             if (!repeatCount.hasOwnProperty(word)) return;
-            var regex = new RegExp(docID + ':');
-            var wordIndex = MEGA_VAR[word];
-            var docPos = wordIndex.search(regex);
-            //var docPos = wordIndex.indexOf(word);
-            MEGA_VAR[word] = wordIndex.substr(0, docPos) + repeatCount[word] + '-' + wordIndex.substr(docPos);
-            /*
-            var docPos = wordIndex.search(regex);
-            MEGA_VAR[word] = wordIndex.substr(0, docPos) + count + '-' + wordIndex.substr(docPos);
-            */
+           wordINDEX[word] += ('-' + repeatCount[word]);
+            //var docPos = wordIndex.indexOf(docID);
+            //wordINDEX[word] = wordIndex.substr(0, docPos) + repeatCount[word] + '-' + wordIndex.substr(docPos);
         }
-        /*_.each(repeatCount, function (count, word) {
-            var regex = new RegExp(docID + ':');
-            //var test = MEGA_VAR[word].search(/docId + ':'/);
-            //MEGA_VAR[word] = MEGA_VAR[word].substr(0, docPos) + count + '-' + MEGA_VAR[word].substr(docPos);
-        })*/
     }
 
     function saveVarToMongo() {
@@ -73,7 +64,7 @@ function startFileProcessing() {
             if (err) console.log(err);
             var collection = db.collection('engine-test');
             var batch = collection.initializeUnorderedBulkOp({useLegacyOps: true});
-            _.each(MEGA_VAR, function (index, word) {
+            _.each(wordINDEX, function (index, word) {
                 batch.insert({word: word, index: index}, {w: 0}, function (err, result) {
                 });
             });
