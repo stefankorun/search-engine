@@ -4,14 +4,15 @@ var _ = require('lodash');
 var Q = require('q');
 var MongoClient = require('mongodb').MongoClient;
 
+
 var config = {
   fileDir: '../db/html/'
 };
+var docNameMAPPER = {};
 var wordINDEX = {};
-var wordCOUNT = {};
 
-startFileProcessing();
-//searchMongo(['софија', 'вергара']);
+//startFileProcessing();
+searchMongo(['софија', 'вергара']);
 //arrayIntersection([[2, 3, 4], [3, 8, 10]]);
 
 function startFileProcessing() {
@@ -20,11 +21,12 @@ function startFileProcessing() {
   console.log('reading', files.length, 'files');
 
   files.forEach(function (file, key) {
+    docNameMAPPER[key] = file;
     readFileSync(config.fileDir + file, key);
   });
 
   console.timeEnd('fileProcessing');
-  //saveVarToMongo();
+  saveVarToMongo();
 
   // helpers
   function readFileSync(file, key) {
@@ -76,31 +78,44 @@ function startFileProcessing() {
   }
 }
 
+var docINDEX = {};
 function searchMongo(words) {
   console.time('mongoFind');
   MongoClient.connect("mongodb://localhost:27017/search-engine", function (err, db) {
     if (err) console.log(err);
     if (!_.isArray(words)) return -1;
-
+    var query = _.transform(words, function (result, word) {
+      result.push({word: word});
+    });
     var collection = db.collection('engine-test');
 
-    var promises = [];
-    words.forEach(function (word) {
-      var def = Q.defer();
-      promises.push(def.promise);
-      collection.findOne({word: word}, function (err, item) {
-        def.resolve(item);
+    collection.find({$or: query}).toArray(function (err, data) {
+      if (err) return err;
+      _.each(data, function (mongoDoc) {
+        var indexes = mongoDoc.index.split(':');
+        _.each(indexes, function (doc) {
+          var docId = doc.split('-')[0];
+          var docWeight = parseFloat(Math.log(1 + (doc.split('-')[1] || 1)).toFixed(3)); // da se optimizirat i sredit
+          if(!docINDEX[docId]) docINDEX[docId] = docWeight;
+          else docINDEX[docId] += docWeight;
+        })
       });
-    });
-    Q.all(promises).then(function (data) {
-      data = _.map(data, function (item) {
-        return item.index.split(':');
+      db.close();
+      var result = [];
+      _.each(docINDEX, function(docWeight, docId) {
+        result.push({
+          docId: docNameMAPPER[docId],
+          docWeight: docWeight
+        })
       });
-      console.log(_.intersection.apply(_, data));
+      console.log(_.sortBy(result, 'docWeight'));
       console.timeEnd('mongoFind');
     });
   });
 }
+
+
+// za pokasno ova HEEEEEEEHEH
 function arrayIntersection(arrs) {
   var LinkedArray = function (a) {
     var array = a;
