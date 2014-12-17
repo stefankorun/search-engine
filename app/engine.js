@@ -8,11 +8,10 @@ var MongoClient = require('mongodb').MongoClient;
 var config = {
   fileDir: '../db/html/'
 };
-var docNameMAPPER = {};
 var wordINDEX = {};
 
 //startFileProcessing();
-searchMongo(['станија', 'гола']);
+searchMongo(['протест', 'битола']);
 //arrayIntersection([[2, 3, 4], [3, 8, 10]]);
 
 function startFileProcessing() {
@@ -21,7 +20,6 @@ function startFileProcessing() {
   console.log('reading', files.length, 'files');
 
   files.forEach(function (file, key) {
-    docNameMAPPER[key] = file;
     readFileSync(config.fileDir + file, key);
   });
 
@@ -79,8 +77,13 @@ function startFileProcessing() {
 }
 
 var docINDEX = {};
+var docNameMAPPER = {};
 function searchMongo(words) {
   console.time('mongoFind');
+  var files = fs.readdirSync(config.fileDir);
+
+
+
   MongoClient.connect("mongodb://localhost:27017/search-engine", function (err, db) {
     if (err) console.log(err);
     if (!_.isArray(words)) return -1;
@@ -95,7 +98,7 @@ function searchMongo(words) {
         var indexes = mongoDoc.index.split(':');
         _.each(indexes, function (doc) {
           var docId = doc.split('-')[0];
-          var docWeight = parseFloat(Math.log(1 + (doc.split('-')[1] || 1)).toFixed(3)); // da se optimizirat i sredit
+          var docWeight = parseFloat(Math.log(1 + (doc.split('-')[1] || 1)) * Math.log(files.length / indexes.length)); // da se optimizirat i sredit
           if(!docINDEX[docId]) docINDEX[docId] = docWeight;
           else docINDEX[docId] += docWeight;
         })
@@ -104,7 +107,7 @@ function searchMongo(words) {
       var result = [];
       _.each(docINDEX, function(docWeight, docId) {
         result.push({
-          docId: docNameMAPPER[docId],
+          docId: docId,
           docWeight: docWeight
         })
       });
