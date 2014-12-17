@@ -12,7 +12,7 @@ var docNameMAPPER = {};
 var wordINDEX = {};
 
 //startFileProcessing();
-searchMongo(['софија', 'вергара']);
+searchMongo(['станија', 'гола']);
 //arrayIntersection([[2, 3, 4], [3, 8, 10]]);
 
 function startFileProcessing() {
