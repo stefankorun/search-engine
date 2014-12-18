@@ -1,9 +1,9 @@
 {
   "name": "search_engine",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "Simple search engine with node.js",
   "main": "app/engine.js",
-  "repository": "",
+  "repository": "https://github.com/stefankorun/search-engine.git",
   "author": "Stefan K",
   "dependencies": {
     "async": "latest",
@@ -11,7 +11,7 @@
     "lodash": "latest",
     "mongodb": "latest",
     "mongoose": "latest",
-    "q": "^1.1.2",
+    "q": "latest",
     "request": "latest"
   }
 }
