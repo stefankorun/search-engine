@@ -1,7 +1,7 @@
 // imports
 var request = require("request");
 var fs = require('fs');
-var cheerio = require('cheerio')
+var cheerio = require('cheerio');
 
 var config = {
   baseUrl: 'http://kajgana.com/node/',
