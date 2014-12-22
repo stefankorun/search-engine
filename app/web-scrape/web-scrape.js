@@ -2,6 +2,7 @@
   // requires
   var fs = require('fs');
   var _ = require('lodash');
+  var q = require('q');
   var request = require("request");
   var cheerio = require('cheerio');
 
@@ -11,6 +12,7 @@
   var globalLinks = [];
 
   webScrape.startWebScrape = function (startDomain, levelLimit) {
+    var deferred = q.defer();
     console.log('Starting web scraping on:', startDomain);
 
     request.get(startDomain, function (error, response, body) {
@@ -18,6 +20,7 @@
         var html = cheerio.load(body);
         var aTags = html('a');
         var links = [];
+
 
         for (var i = 0; i < aTags.length; ++i) {
           var link = aTags.eq(i).attr('href') || '';
