@@ -7,43 +7,46 @@
   var cheerio = require('cheerio');
 
   var webScrape = {};
-  var urlRegex = /(https?:\/\/)(www\.)?(\w+\.?){1,2}(\.\w{2,5}){1,2}/g;
-
-  var globalLinks = [];
 
   webScrape.startWebScrape = function (startDomain, levelLimit) {
-    var deferred = q.defer();
     console.log('Starting web scraping on:', startDomain);
+    scrapePage(startDomain, levelLimit, true);
+  };
 
-    request.get(startDomain, function (error, response, body) {
+
+  var urlRegex = /(https?:\/\/)(www\.)?(\w+\.?){1,2}(\.\w{2,5}){1,2}/g;
+  var globalLinks = [];
+  var beenThereDoneThat = [];
+
+  function scrapePage(pageLink, level) {
+    if (_.contains(beenThereDoneThat, pageLink)) return;
+    beenThereDoneThat.push(pageLink);
+
+    request.get(pageLink, function (error, response, body) {
       if (!error && response.statusCode == 200) {
-        var html = cheerio.load(body);
-        var aTags = html('a');
+        var aTags = cheerio.load(body)('a');
         var links = [];
 
-
         for (var i = 0; i < aTags.length; ++i) {
-          var link = aTags.eq(i).attr('href') || '';
+          var link = (aTags.eq(i).attr('href') || '').toLowerCase();
           var linkMatch = link.match(urlRegex);
           if (linkMatch) links.push(linkMatch[0]);
         }
+
         links = _.uniq(links);
+        console.log(pageLink, 'links:\n', links);
         globalLinks.push(links);
 
-        if (levelLimit) {
+        if (level > 0) {
           links.forEach(function (link) {
-            webScrape.startWebScrape(link, levelLimit - 1);
+            scrapePage(link, level - 1);
           });
         }
       } else {
-        console.log(error);
+        console.log('network ERR: ', error);
       }
     });
-  };
-
-  setTimeout(function () {
-    console.log(_.union.apply(this, globalLinks));
-  }, 5000);
+  }
 
   module.exports = webScrape;
 })();
