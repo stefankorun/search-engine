@@ -18,9 +18,9 @@
   var globalLinks = [];
   var beenThereDoneThat = [];
 
-  function scrapePage(pageLink, level) {
+  function scrapePage(pageLink, level, isLast) {
     if (_.contains(beenThereDoneThat, pageLink)) return;
-    beenThereDoneThat.push(pageLink);
+    beenThereDoneThat.push(pageLink); // TODO ova da se optimizirat so globalLinks
 
     request.get(pageLink, function (error, response, body) {
       if (!error && response.statusCode == 200) {
@@ -32,14 +32,12 @@
           var linkMatch = link.match(urlRegex);
           if (linkMatch) links.push(linkMatch[0]);
         }
-
         links = _.uniq(links);
-        console.log(pageLink, 'links:\n', links);
         globalLinks.push(links);
 
         if (level > 0) {
           links.forEach(function (link) {
-            scrapePage(link, level - 1);
+            scrapePage(link, level - 1, isLast);
           });
         }
       } else {
