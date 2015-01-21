@@ -8,9 +8,12 @@
 
   var webScrape = {};
 
-  webScrape.startWebCrawler = function (startDomain, levelLimit) {
-    console.log('Starting web scraping on:', startDomain);
-    crawlPages(startDomain, levelLimit, true);
+  webScrape.startWebCrawler = function (startDomains, levelLimit) {
+    console.log('Starting web scraping on:', startDomains);
+    if (!_.isArray(startDomains)) startDomains = [startDomains];
+    _.each(startDomains, function (domain) {
+      crawlPage(domain, levelLimit, true)
+    });
   };
   webScrape.getAllLinks = function () {
     var links = fs.readFileSync('web-crawler/links.txt', {encoding: 'utf8'});
@@ -22,7 +25,7 @@
   var globalLinks = [];
   var beenThereDoneThat = [];
 
-  function crawlPages(pageLink, level) {
+  function crawlPage(pageLink, level) {
     if (_.contains(beenThereDoneThat, pageLink)) return;
     beenThereDoneThat.push(pageLink); // TODO ova da se optimizirat so globalLinks
 
@@ -41,7 +44,7 @@
 
         if (level > 0) {
           links.forEach(function (link) {
-            crawlPages(link, level - 1);
+            crawlPage(link, level - 1);
           });
         } else {
           fs.writeFileSync('web-crawler/links.txt', _.union.apply(this, globalLinks).join(';'));
