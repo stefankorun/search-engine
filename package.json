@@ -10,7 +10,6 @@
     "cheerio": "latest",
     "lodash": "latest",
     "mongodb": "latest",
-    "mongoose": "latest",
     "q": "latest",
     "request": "latest"
   }
