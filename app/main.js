@@ -4,6 +4,7 @@ var request = require("request");
 var cheerio = require('cheerio');
 
 (function () {
-  var ws = require('./web-scrape/web-scrape');
-  ws.startWebScrape('http://www.time.mk/', 2);
+  var ws = require('./web-crawler/web-crawler');
+  //ws.startWebCrawler('http://off.net.mk/', 2);
+  console.log(ws.getAllLinks());
 })();

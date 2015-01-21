@@ -8,9 +8,13 @@
 
   var webScrape = {};
 
-  webScrape.startWebScrape = function (startDomain, levelLimit) {
+  webScrape.startWebCrawler = function (startDomain, levelLimit) {
     console.log('Starting web scraping on:', startDomain);
-    scrapePage(startDomain, levelLimit, true);
+    crawlPages(startDomain, levelLimit, true);
+  };
+  webScrape.getAllLinks = function () {
+    var links = fs.readFileSync('web-crawler/links.txt', {encoding: 'utf8'});
+    return links.split(';');
   };
 
 
@@ -18,7 +22,7 @@
   var globalLinks = [];
   var beenThereDoneThat = [];
 
-  function scrapePage(pageLink, level, isLast) {
+  function crawlPages(pageLink, level) {
     if (_.contains(beenThereDoneThat, pageLink)) return;
     beenThereDoneThat.push(pageLink); // TODO ova da se optimizirat so globalLinks
 
@@ -37,11 +41,13 @@
 
         if (level > 0) {
           links.forEach(function (link) {
-            scrapePage(link, level - 1, isLast);
+            crawlPages(link, level - 1);
           });
+        } else {
+          fs.writeFileSync('web-crawler/links.txt', _.union.apply(this, globalLinks).join(';'));
         }
       } else {
-        console.log('network ERR: ', error);
+        console.log('network ERR: ', pageLink, error);
       }
     });
   }
