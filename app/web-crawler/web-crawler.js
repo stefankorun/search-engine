@@ -29,12 +29,17 @@
   var globalLinks = [];
   var beenThereDoneThat = [];
 
+  process.setMaxListeners(0);
+  function startCrawlingNor(links, level) {
+    
+  }
   function startCrawling(pageLink, level) {
     if (_.contains(beenThereDoneThat, pageLink)) return;
     beenThereDoneThat.push(pageLink); // TODO ova da se optimizirat so globalLinks
 
     console.log(pageLink);
-    request.get(pageLink, function (error, response, body) {
+    var options = {uri: pageLink,  maxRedirects: 5};
+    request.get(options, function (error, response, body) {
       if (!error && response.statusCode == 200) {
         var aTags = cheerio.load(body)('a');
         var links = {
@@ -54,7 +59,7 @@
           }
         }
         links.external = _.uniq(links.external);
-        links.internal = _(links.internal).uniq().shuffle().slice(0, 99);
+        links.internal = _(links.internal).uniq().shuffle().slice(0, 49);
         globalLinks.push(links.external);
 
         if (level > 0) {
@@ -63,7 +68,7 @@
             startCrawling(link, level - 1);
           });
         } else {
-          fs.writeFileSync('web-crawler/links-db/' + response.request.host, _.union.apply(this, globalLinks).join(';'));
+          fs.writeFile('web-crawler/links-db/' + response.request.host, _.union.apply(this, globalLinks).join(';'));
         }
       } else {
         console.log('network ERR: ', pageLink, error);
