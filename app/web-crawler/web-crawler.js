@@ -22,7 +22,7 @@
     });
   };
 
-// Private
+  // Private
   var externalUrlRegex = /^(https?:\/\/)(www\.)?(\w+\.?){1,2}(\.\w{2,5}){1,2}/g;
   var internalUrlRegex = /^(\/[^?#]+)(\?|#.*)?/g;
 
@@ -54,7 +54,7 @@
           }
         }
         links.external = _.uniq(links.external);
-        links.internal = _.uniq(links.internal);
+        links.internal = _(links.internal).uniq().shuffle().slice(0, 99);
         globalLinks.push(links.external);
 
         if (level > 0) {
@@ -63,7 +63,7 @@
             startCrawling(link, level - 1);
           });
         } else {
-          fs.writeFileSync('web-crawler/links.txt', _.union.apply(this, globalLinks).join(';'));
+          fs.writeFileSync('web-crawler/links-db/' + response.request.host, _.union.apply(this, globalLinks).join(';'));
         }
       } else {
         console.log('network ERR: ', pageLink, error);
@@ -87,6 +87,7 @@
       }
     });
   }
+
   //urlSamples('http://off.net.mk/vesti/mislenja/ne-ljubovta-uveruvanjata-se-slepi');
 
 
