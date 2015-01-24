@@ -15,30 +15,91 @@
     return links.split(';');
   };
   webScrape.startWebCrawler = function (startDomains, levelLimit) {
-    console.log('Starting web scraping on:', startDomains);
-    if (!_.isArray(startDomains)) startDomains = [startDomains];
-    _.each(startDomains, function (domain) {
-      startCrawling(domain, levelLimit, true);
-    });
+    startCrawling2(startDomains, 1);
+    /* version 1
+     console.log('Starting web scraping on:', startDomains);
+     if (!_.isArray(startDomains)) startDomains = [startDomains];
+     _.each(startDomains, function (domain) {
+     startCrawling(domain, levelLimit, true);
+     });
+     */
   };
+
 
   // Private
   var externalUrlRegex = /^(https?:\/\/)(www\.)?(\w+\.?){1,2}(\.\w{2,5}){1,2}/g;
   var internalUrlRegex = /^(\/[^?#]+)(\?|#.*)?/g;
 
+  /* -- version 2 -- */
+  var pagesFound = [];
+  request.defaults({maxRedirects: 20});
+  function startCrawling2(links, level) {
+    var linksPromises = [];
+    var intLinks, extLinks;
+
+    _.each(links, function (link) {
+      linksPromises.push(sendPageRequest(link));
+    });
+
+    q.all(linksPromises).then(function (data) {
+      intLinks = _.union.apply(this, (_.pluck(data, 'internal')));
+      extLinks = _.union.apply(this, (_.pluck(data, 'external')));
+
+      pagesFound = _.union(pagesFound, extLinks);
+      if (level == 0) console.log(pagesFound);
+      else if (level > 0) {
+        startCrawling2(intLinks, level - 1);
+      }
+
+    });
+
+
+    function sendPageRequest(pageLink) {
+      console.log('sendPageRequest:', pageLink);
+      var deferred = q.defer();
+      var options = {uri: pageLink, maxRedirects: 5};
+      request.get(options, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+          var aTags = cheerio.load(body)('a');
+          var links = {
+            external: [],
+            internal: []
+          };
+
+          for (var i = 0; i < aTags.length; ++i) {
+            var link = (aTags.eq(i).attr('href') || '').toLowerCase();
+
+            var internalLink = link.match(internalUrlRegex);
+            if (internalLink) {
+              var tempLink = 'http://' + response.request.host + internalLink[0];
+              links.internal.push(tempLink);
+            } else {
+              var externalLink = link.match(externalUrlRegex);
+              if (externalLink) links.external.push(externalLink[0]);
+            }
+          }
+          links.external = _.uniq(links.external);
+          links.internal = _.uniq(links.internal);
+          deferred.resolve(links);
+        } else {
+          deferred.resolve(null);
+          console.log('network ERR: ', pageLink, error);
+        }
+      });
+      return deferred.promise;
+    }
+  }
+
+  /* -- version 1 -- */
   var globalLinks = [];
   var beenThereDoneThat = [];
 
-  process.setMaxListeners(0);
-  function startCrawlingNor(links, level) {
-    
-  }
   function startCrawling(pageLink, level) {
     if (_.contains(beenThereDoneThat, pageLink)) return;
     beenThereDoneThat.push(pageLink); // TODO ova da se optimizirat so globalLinks
 
     console.log(pageLink);
-    var options = {uri: pageLink,  maxRedirects: 5};
+    var options = {uri: pageLink, maxRedirects: 5};
     request.get(options, function (error, response, body) {
       if (!error && response.statusCode == 200) {
         var aTags = cheerio.load(body)('a');
@@ -76,6 +137,8 @@
     });
   }
 
+
+  /* -- test functions -- */
   function urlSamples(pageLink) {
     request.get(pageLink, function (error, response, body) {
       if (!error && response.statusCode == 200) {
