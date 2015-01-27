@@ -15,14 +15,13 @@
     return links.split(';');
   };
   webScrape.startWebCrawler = function (startDomains, levelLimit) {
-    startCrawling2(startDomains, 1);
-    /* version 1
-     console.log('Starting web scraping on:', startDomains);
-     if (!_.isArray(startDomains)) startDomains = [startDomains];
-     _.each(startDomains, function (domain) {
-     startCrawling(domain, levelLimit, true);
-     });
-     */
+    if (!_.isArray(startDomains)) startDomains = [startDomains];
+    console.log('Starting web scraping on:', startDomains);
+    startCrawling2(startDomains, levelLimit);
+
+    //_.each(startDomains, function (domain) {
+    //  startCrawling(domain, levelLimit, true);
+    //});
   };
 
 
@@ -32,10 +31,12 @@
 
   /* -- version 2 -- */
   var pagesFound = [];
-  request.defaults({maxRedirects: 20});
   function startCrawling2(links, level) {
+    console.log('\n\n Level', level);
     var linksPromises = [];
     var intLinks, extLinks;
+
+    links = _.shuffle(links).slice(0,69);
 
     _.each(links, function (link) {
       linksPromises.push(sendPageRequest(link));
@@ -46,17 +47,20 @@
       extLinks = _.union.apply(this, (_.pluck(data, 'external')));
 
       pagesFound = _.union(pagesFound, extLinks);
-      if (level == 0) console.log(pagesFound);
+      if (level == 0) {
+        console.log(pagesFound);
+        fs.writeFile('web-crawler/links-db/startCrawling2', JSON.stringify(pagesFound));
+      }
       else if (level > 0) {
         startCrawling2(intLinks, level - 1);
       }
-
     });
 
 
     function sendPageRequest(pageLink) {
-      console.log('sendPageRequest:', pageLink);
+      console.log('request:', pageLink);
       var deferred = q.defer();
+
       var options = {uri: pageLink, maxRedirects: 5};
       request.get(options, function (error, response, body) {
         if (!error && response.statusCode == 200) {
