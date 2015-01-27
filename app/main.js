@@ -5,6 +5,6 @@ var cheerio = require('cheerio');
 
 (function () {
   var ws = require('./web-crawler/web-crawler');
-  ws.startWebCrawler(['http://off.net.mk/'], 100);
+  ws.startWebCrawler(['http://kurir.mk/'], 100);
   //console.log(ws.getAllLinks());
 })();
