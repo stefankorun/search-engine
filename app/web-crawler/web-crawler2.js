@@ -19,18 +19,15 @@ var pagesFound = {
   visited: []
 };
 
-//console.log(externalUrlRegex.exec('https://asd.facebook.com.mk'));
-//return;
 
 webScrape.getLinks = function (urls) {
   startCrawl(urls, 3);
 };
 
 function startCrawl(urls, level) {
-  console.log('\n\n\nSTARTING LEVEL', level);
-  console.log('TOTAL URLS: %d \n', urls.length);
-
+  console.log('\n\n\nSTARTING LEVEL %d \nTOTAL URLS: %d\n', level, urls.length);
   var pagesInternal = [];
+
   async.eachLimit(urls, 10, function (item, callback) {
     sendPageRequest(item).then(function (data) {
       if (data) {
@@ -41,7 +38,6 @@ function startCrawl(urls, level) {
     });
   }, function () {
     if (!level) {
-      console.log(pagesFound.external);
       fs.writeFile('web-crawler/links-db/NOVO', JSON.stringify(pagesFound.external));
       return pagesFound;
     } else {
