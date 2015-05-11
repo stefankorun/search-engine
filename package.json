@@ -7,10 +7,10 @@
   "author": "Stefan K",
   "dependencies": {
     "async": "latest",
+    "bluebird": "^2.9",
     "cheerio": "latest",
     "lodash": "latest",
     "mongodb": "latest",
-    "q": "latest",
     "request": "latest"
   }
 }
