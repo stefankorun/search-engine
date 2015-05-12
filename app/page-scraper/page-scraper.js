@@ -12,9 +12,9 @@ var internalUrlRegex = /^(\/[^?#]+)(\?|#.*)?/g;
 var pageScrape = {};
 module.exports = pageScrape;
 
-pageScrape.getLinks = function (pageLink) {
+pageScrape.getLinks = function (pageUrl) {
   var deferred = q.defer();
-  var options = {uri: pageLink, maxRedirects: 5};
+  var options = {uri: pageUrl, maxRedirects: 5};
   request.get(options, function (error, response, body) {
     if (!error && response.statusCode == 200) {
       var aTags = cheerio.load(body)('a');
@@ -39,15 +39,23 @@ pageScrape.getLinks = function (pageLink) {
       links.internal = _.uniq(links.internal);
       deferred.resolve(links);
     } else {
-      console.log('network ERR: ', pageLink, error);
+      console.log('network ERR: ', pageUrl, error);
       deferred.resolve(null);
     }
   });
   return deferred.promise;
 };
 
-pageScrape.findContentDiv = function () {
-
+pageScrape.findContentDiv = function (urls) {
+  var options = {uri: urls, maxRedirects: 5};
+  request.get(options, function (error, response, body) {
+    if (!error && response.statusCode == 200) {
+      var $ = cheerio.load(body);
+      console.log($('body').contents());
+    } else {
+      console.log('network ERR: ', urls, error);
+    }
+  });
 };
 
 

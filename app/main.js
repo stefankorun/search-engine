@@ -6,5 +6,7 @@ var cheerio = require('cheerio');
 
 (function () {
   var ws = require('./web-crawler/web-crawler2');
-  ws.getLinks(['http://off.net.mk/']);
+  var ps = require('./page-scraper/page-scraper');
+  //ws.getLinks(['http://off.net.mk/']);
+  ps.findContentDiv('http://off.net.mk/vesti/razno/sramot-od-70-milijardi-dolari');
 })();
