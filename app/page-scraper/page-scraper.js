@@ -1,6 +1,7 @@
 // requires
 var _ = require('lodash');
 var q = require('q');
+var async = require("async");
 var request = require("request");
 var cheerio = require('cheerio');
 
@@ -47,17 +48,49 @@ pageScrape.getLinks = function (pageUrl) {
 };
 
 pageScrape.findContentDiv = function (urls) {
-  var options = {uri: urls, maxRedirects: 5};
-  request.get(options, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-      var $ = cheerio.load(body);
-      console.log($('body').contents());
-    } else {
-      console.log('network ERR: ', urls, error);
-    }
+  var results = [];
+  async.each(urls, function (url, callback) {
+    var options = {uri: url, maxRedirects: 5};
+    request.get(options, function (error, response, body) {
+      if (!error && response.statusCode == 200) {
+        var $ = cheerio.load(body, {
+          normalizeWhitespace: true
+        });
+        results.push(getPageContents($));
+      } else {
+        console.log('network ERR: ', urls, error);
+      }
+      callback(null);
+    });
+  }, function (err) {
+    console.log(err, results);
   });
 };
 
+
+function getPageContents($) {
+  var data = [];
+  var body = $('body');
+  $('script').remove();
+  getDivContent(body);
+
+  // TODO cudna rekurzija mojt popametno valda
+  function getDivContent (div) {
+    var children = div.children();
+
+    if (children.length > 3) {
+      children.each(function (index, item) {
+        getDivContent($(item));
+      })
+    } else {
+      data.push({
+        attr: div.get(0).attribs,
+        text: div.text().trim().replace(/\s{2,}/g, ' ').replace(/[!-\/]/g, '')
+      })
+    }
+  }
+  return data;
+}
 
 
 

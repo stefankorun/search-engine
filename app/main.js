@@ -8,5 +8,8 @@ var cheerio = require('cheerio');
   var ws = require('./web-crawler/web-crawler2');
   var ps = require('./page-scraper/page-scraper');
   //ws.getLinks(['http://off.net.mk/']);
-  ps.findContentDiv('http://off.net.mk/vesti/razno/sramot-od-70-milijardi-dolari');
+  ps.findContentDiv([
+    'http://off.net.mk/zhivot-i-zabava/zdravje/amerikancite-dojdoa-do-kubanskiot-lek-za-rak',
+    'http://off.net.mk/vesti/razno/oblachna-e-ovaa-planeta'
+  ]);
 })();
