@@ -3,13 +3,12 @@ var _ = require('lodash');
 var request = require("request");
 var cheerio = require('cheerio');
 
+var wc = require('./web-crawler/web-crawler');
+var ps = require('./page-scraper/page-scraper');
 
-(function () {
-  var ws = require('./web-crawler/web-crawler2');
-  var ps = require('./page-scraper/page-scraper');
-  //ws.getLinks(['http://off.net.mk/']);
-  ps.findContentDiv([
-    'http://off.net.mk/zhivot-i-zabava/zdravje/amerikancite-dojdoa-do-kubanskiot-lek-za-rak',
-    'http://off.net.mk/vesti/razno/oblachna-e-ovaa-planeta'
-  ]);
-})();
+
+wc.getLinks(['http://zk.mk/']);
+//ps.findContentDiv([
+//  'http://off.net.mk/zhivot-i-zabava/zdravje/amerikancite-dojdoa-do-kubanskiot-lek-za-rak',
+//  'http://off.net.mk/vesti/razno/oblachna-e-ovaa-planeta'
+//]);

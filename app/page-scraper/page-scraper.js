@@ -29,7 +29,7 @@ pageScrape.getLinks = function (pageUrl) {
 
         var internalLink = link.match(internalUrlRegex);
         if (internalLink) {
-          var tempLink = 'http://www.' + response.request.host + internalLink[0];
+          var tempLink = 'http://' + response.request.host + internalLink[0];
           links.internal.push(tempLink);
         } else {
           var externalLink = link.match(externalUrlRegex);
@@ -65,32 +65,35 @@ pageScrape.findContentDiv = function (urls) {
   }, function (err) {
     console.log(err, results);
   });
+
+  function getPageContents($) {
+    var data = [];
+    var body = $('body');
+    $('script').remove();
+    getDivContent(body);
+
+    // TODO cudna rekurzija mojt popametno valda
+    function getDivContent(div) {
+      var children = div.children();
+
+      if (children.length > 3) {
+        children.each(function (index, item) {
+          getDivContent($(item));
+        })
+      } else {
+        var text = div.text().trim().replace(/\s{2,}/g, ' ').replace(/[!-\/]/g, '');
+        data.push({
+            attr: div.get(0).attribs,
+            text: text
+          })
+      }
+    }
+
+    return data;
+  }
 };
 
 
-function getPageContents($) {
-  var data = [];
-  var body = $('body');
-  $('script').remove();
-  getDivContent(body);
+function getPageRequest() {
 
-  // TODO cudna rekurzija mojt popametno valda
-  function getDivContent (div) {
-    var children = div.children();
-
-    if (children.length > 3) {
-      children.each(function (index, item) {
-        getDivContent($(item));
-      })
-    } else {
-      data.push({
-        attr: div.get(0).attribs,
-        text: div.text().trim().replace(/\s{2,}/g, ' ').replace(/[!-\/]/g, '')
-      })
-    }
-  }
-  return data;
 }
-
-
-
