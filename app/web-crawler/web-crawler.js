@@ -1,4 +1,5 @@
 // requires
+var request = require("request");
 var async = require('async');
 var fs = require('fs');
 var _ = require('lodash');
@@ -16,7 +17,7 @@ var webScrape = {};
 module.exports = webScrape;
 
 webScrape.getLinks = function (urls) {
-  startCrawl(urls, 2);
+  startCrawl(urls, 1);
 };
 
 function startCrawl(urls, level) {
@@ -30,13 +31,18 @@ function startCrawl(urls, level) {
     } else {
       pagesFound.visited.push(item);
       console.log('request:', item);
-      PageScraper.getLinks(item).then(function (data) {
-        if (data) {
-          pagesFound.external = _.union(pagesFound.external, data.external);
-          pagesInternal = _.union(pagesInternal, data.internal);
+      var options = {uri: item, maxRedirects: 5};
+      request.get(options, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+          var data = PageScraper.getLinks(body, response);
+          if (data) {
+            pagesFound.external = _.union(pagesFound.external, data.external);
+            pagesInternal = _.union(pagesInternal, data.internal);
+          }
         }
         callback(null);
       });
+
     }
   }, function () {
     if (!level) {

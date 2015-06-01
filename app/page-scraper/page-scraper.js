@@ -2,7 +2,6 @@
 var _ = require('lodash');
 var q = require('q');
 var async = require("async");
-var request = require("request");
 var cheerio = require('cheerio');
 
 // private
@@ -13,38 +12,27 @@ var internalUrlRegex = /^(\/[^?#]+)(\?|#.*)?/g;
 var pageScrape = {};
 module.exports = pageScrape;
 
-pageScrape.getLinks = function (pageUrl) {
-  var deferred = q.defer();
-  var options = {uri: pageUrl, maxRedirects: 5};
-  request.get(options, function (error, response, body) {
-    if (!error && response.statusCode == 200) {
-      var aTags = cheerio.load(body)('a');
-      var links = {
-        external: [],
-        internal: []
-      };
+pageScrape.getLinks = function (body, response) {
+  var aTags = cheerio.load(body)('a');
+  var links = {
+    external: [],
+    internal: []
+  };
+  for (var i = 0; i < aTags.length; ++i) {
+    var link = (aTags.eq(i).attr('href') || '').toLowerCase();
 
-      for (var i = 0; i < aTags.length; ++i) {
-        var link = (aTags.eq(i).attr('href') || '').toLowerCase();
-
-        var internalLink = link.match(internalUrlRegex);
-        if (internalLink) {
-          var tempLink = 'http://' + response.request.host + internalLink[0];
-          links.internal.push(tempLink);
-        } else {
-          var externalLink = link.match(externalUrlRegex);
-          if (externalLink) links.external.push(externalLink[0]);
-        }
-      }
-      links.external = _.uniq(links.external);
-      links.internal = _.uniq(links.internal);
-      deferred.resolve(links);
+    var internalLink = link.match(internalUrlRegex);
+    if (internalLink) {
+      var tempLink = 'http://' + response.request.host + internalLink[0];
+      links.internal.push(tempLink);
     } else {
-      console.log('network ERR: ', pageUrl, error);
-      deferred.resolve(null);
+      var externalLink = link.match(externalUrlRegex);
+      if (externalLink) links.external.push(externalLink[0]);
     }
-  });
-  return deferred.promise;
+  }
+  links.external = _.uniq(links.external);
+  links.internal = _.uniq(links.internal);
+  return links;
 };
 
 pageScrape.findContentDiv = function (urls) {
@@ -83,9 +71,9 @@ pageScrape.findContentDiv = function (urls) {
       } else {
         var text = div.text().trim().replace(/\s{2,}/g, ' ').replace(/[!-\/]/g, '');
         data.push({
-            attr: div.get(0).attribs,
-            text: text
-          })
+          attr: div.get(0).attribs,
+          text: text
+        })
       }
     }
 
