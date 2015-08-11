@@ -1,8 +1,9 @@
 // requires
+var cheerio = require('cheerio');
+var request = require('request');
+var async = require("async");
 var _ = require('lodash');
 var q = require('q');
-var async = require("async");
-var cheerio = require('cheerio');
 
 // private
 var externalUrlRegex = /^(https?:\/\/)(www\.)?(\w+\.?)+(\.\w{2,5}){1,2}/g;
@@ -71,12 +72,12 @@ pageScrape.findContentDiv = function (urls) {
       } else {
         var text = div.text().trim().replace(/\s{2,}/g, ' ').replace(/[!-\/]/g, '');
         data.push({
-          attr: div.get(0).attribs,
-          text: text
+          class: div.get(0).attribs.class,
+          id: div.get(0).attribs.id,
+          text: text.toLowerCase().split(' ')
         })
       }
     }
-
     return data;
   }
 };

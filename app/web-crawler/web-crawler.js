@@ -1,8 +1,8 @@
 // requires
-var request = require("request");
+var request = require('request');
 var async = require('async');
-var fs = require('fs');
 var _ = require('lodash');
+var fs = require('fs');
 
 var PageScraper = require('../page-scraper/page-scraper');
 
