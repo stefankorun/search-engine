@@ -52,7 +52,11 @@ pageScrape.findContentDiv = function (urls) {
       callback(null);
     });
   }, function (err) {
+    var bestMatch = _.max(results[0], function (page) {
+      return page.text.length;
+    });
     console.log(err, results);
+    console.log('Best match element is:', bestMatch)
   });
 
   function getPageContents($) {
@@ -65,19 +69,28 @@ pageScrape.findContentDiv = function (urls) {
     function getDivContent(div) {
       var children = div.children();
 
-      if (children.length > 3) {
+      if (_containingMainElements(children)) {
         children.each(function (index, item) {
           getDivContent($(item));
         })
       } else {
         var text = div.text().trim().replace(/\s{2,}/g, ' ').replace(/[!-\/]/g, '');
-        data.push({
-          class: div.get(0).attribs.class,
-          id: div.get(0).attribs.id,
-          text: text.toLowerCase().split(' ')
-        })
+        if (text.length > 0) {
+          data.push({
+            element: div,
+            text: text.toLowerCase().split(' ')
+          })
+        }
       }
     }
+
+    // helpers
+    function _containingMainElements(children) {
+      var mainElements = ['div', 'section'];
+      var childrenElements = _.pluck(children, 'name');
+      return _.intersection(mainElements, childrenElements).length > 0;
+    }
+
     return data;
   }
 };
