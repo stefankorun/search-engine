@@ -17,7 +17,7 @@ var webScrape = {};
 module.exports = webScrape;
 
 webScrape.getLinks = function (urls) {
-  startCrawl(urls, 1);
+  startCrawl(urls, 0);
 };
 
 function startCrawl(urls, level) {
@@ -46,7 +46,7 @@ function startCrawl(urls, level) {
     }
   }, function () {
     if (!level) {
-      fs.writeFile('web-crawler/links-db/NOVO', JSON.stringify(pagesFound.external));
+      //fs.writeFile('web-crawler/links-db/NOVO', JSON.stringify(pagesFound.external));
       return pagesFound;
     } else {
       startCrawl(pagesInternal, level - 1);

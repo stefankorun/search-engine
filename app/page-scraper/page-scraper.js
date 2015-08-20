@@ -6,8 +6,9 @@ var _ = require('lodash');
 var q = require('q');
 
 // private
-var externalUrlRegex = /^(https?:\/\/)(www\.)?(\w+\.?)+(\.\w{2,5}){1,2}/g;
-var internalUrlRegex = /^(\/[^?#]+)(\?|#.*)?/g;
+var externalUrlRegex = /^(https?:\/\/)(www\.)?(\w+\.?)+(\.\w{2,5}){1,2}/;
+//var internalUrlRegex = /^(\/[^?#]+)(\?|#.*)?/g; - old version
+var internalUrlRegex = /^(\/?(?!mailto:)[^?#)]+)/;
 
 // public
 var pageScrape = {};
@@ -23,17 +24,25 @@ pageScrape.getLinks = function (body, response) {
     var link = (aTags.eq(i).attr('href') || '').toLowerCase();
 
     var internalLink = link.match(internalUrlRegex);
-    if (internalLink) {
-      var tempLink = 'http://' + response.request.host + internalLink[0];
+    var externalLink = link.match(externalUrlRegex);
+    if (externalLink) {
+      if (externalLink[0].indexOf(response.request.host) == -1) {
+        links.external.push(externalLink[0]);
+      } else {
+        var tempLink = externalLink.input.replace(externalLink[0], '');
+        internalLink = tempLink.match(internalUrlRegex);
+      }
+    } else if (internalLink) {
+      var tempLink = internalLink[0].charAt(0) == '/' ? internalLink[0] : '/' + internalLink[0];
+      tempLink = 'http://' + response.request.host + tempLink;
       links.internal.push(tempLink);
-    } else {
-      var externalLink = link.match(externalUrlRegex);
-      if (externalLink) links.external.push(externalLink[0]);
     }
   }
   links.external = _.uniq(links.external);
   links.internal = _.uniq(links.internal);
   return links;
+
+
 };
 
 pageScrape.findContentDiv = function (urls) {
