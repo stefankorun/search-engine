@@ -42,7 +42,6 @@ pageScrape.getLinks = function (body, response) {
   links.internal = _.uniq(links.internal);
   return links;
 
-
 };
 
 pageScrape.findContentDiv = function (urls) {
@@ -104,7 +103,3 @@ pageScrape.findContentDiv = function (urls) {
   }
 };
 
-
-function getPageRequest() {
-
-}

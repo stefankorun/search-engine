@@ -1,5 +1,6 @@
 {
   "name": "search_engine",
+  "license": "MIT",
   "version": "0.1.2",
   "description": "Simple search engine with node.js",
   "main": "app/engine.js",
