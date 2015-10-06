@@ -4,7 +4,16 @@ var async = require('async');
 var _ = require('lodash');
 var fs = require('fs');
 
-var PageScraper = require('../page-scraper/page-scraper');
+var PageScraper = require('./page-scraper');
+
+
+// public
+var webScrape = {};
+webScrape.crawlUrl = function (url) {
+  startCrawl(url, 0);
+};
+module.exports = webScrape;
+
 
 // private
 var pagesFound = {
@@ -12,19 +21,11 @@ var pagesFound = {
   visited: []
 };
 
-// public
-var webScrape = {};
-module.exports = webScrape;
-
-webScrape.getLinks = function (urls) {
-  startCrawl(urls, 0);
-};
-
 function startCrawl(urls, level) {
   console.log('\n\n\nSTARTING LEVEL %d \nTOTAL URLS: %d\n', level, urls.length);
   var pagesInternal = [];
 
-  async.eachLimit(urls, 10, function (item, callback) {
+  async.eachLimit(urls, 50, function (item, callback) {
     if (pagesFound.visited.indexOf(item) > 0) {
       console.log('already visited:', item, pagesFound.visited.length);
       callback(null);

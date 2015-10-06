@@ -3,11 +3,9 @@ var cheerio = require('cheerio');
 var request = require('request');
 var async = require("async");
 var _ = require('lodash');
-var q = require('q');
 
 // private
 var externalUrlRegex = /^(https?:\/\/)(www\.)?(\w+\.?)+(\.\w{2,5}){1,2}/;
-//var internalUrlRegex = /^(\/[^?#]+)(\?|#.*)?/g; - old version
 var internalUrlRegex = /^(\/?(?!mailto:)[^?#)]+)/;
 
 // public
@@ -41,7 +39,6 @@ pageScrape.getLinks = function (body, response) {
   links.external = _.uniq(links.external);
   links.internal = _.uniq(links.internal);
   return links;
-
 };
 
 pageScrape.findContentDiv = function (urls) {
