@@ -6,34 +6,30 @@ var fs = require('fs');
 
 var PageScraper = require('./page-scraper');
 
+module.exports = {
+  crawlUrl: crawlUrl
+};
 
 // public
-var webScrape = {};
-webScrape.crawlUrl = function (url) {
-  startCrawl(url, 0);
-};
-module.exports = webScrape;
+function crawlUrl(url) {
+  if (!_.isArray(url)) url = [url];
 
+  var pagesFound = {
+    external: [],
+    visited: []
+  };
 
-// private
-var pagesFound = {
-  external: [],
-  visited: []
-};
+  startCrawl(url, 2);
+  function startCrawl(urls, level) {
+    var pagesInternal = [];
+    urls = _.difference(urls, pagesFound.visited);
 
-function startCrawl(urls, level) {
-  console.log('\n\n\nSTARTING LEVEL %d \nTOTAL URLS: %d\n', level, urls.length);
-  var pagesInternal = [];
-
-  async.eachLimit(urls, 50, function (item, callback) {
-    if (pagesFound.visited.indexOf(item) > 0) {
-      console.log('already visited:', item, pagesFound.visited.length);
-      callback(null);
-    } else {
+    console.log('\n\nSTARTING LEVEL %d \nTOTAL URLS: %d\n', level, urls.length);
+    async.eachLimit(urls, 50, function (item, callback) {
       pagesFound.visited.push(item);
-      console.log('request:', item);
-      var options = {uri: item, maxRedirects: 5};
-      request.get(options, function (error, response, body) {
+      console.log('request to:', item);
+
+      request.get({uri: item, maxRedirects: 5}, function (error, response, body) {
         if (!error && response.statusCode == 200) {
           var data = PageScraper.getLinks(body, response);
           if (data) {
@@ -43,14 +39,16 @@ function startCrawl(urls, level) {
         }
         callback(null);
       });
-
-    }
-  }, function () {
-    if (!level) {
-      //fs.writeFile('web-crawler/links-db/NOVO', JSON.stringify(pagesFound.external));
-      return pagesFound;
-    } else {
-      startCrawl(pagesInternal, level - 1);
-    }
-  })
+    }, function () {
+      if (level === 0) {
+        console.log(pagesFound, pagesInternal);
+        return pagesFound;
+      } else {
+        startCrawl(pagesInternal, level - 1);
+      }
+    })
+  }
 }
+
+
+// private

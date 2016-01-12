@@ -1,5 +1,5 @@
-var WebCrawler = require('./web-crawler/web-crawler');
-var PageScraper = require('./web-crawler/page-scraper');
 var Memory = require('./memory');
+var WebCrawler = require('./web-crawler/web-crawler');
 
 //console.log(WebCrawler, PageScraper, Memory);
+WebCrawler.crawlUrl('http://off.net.mk/');

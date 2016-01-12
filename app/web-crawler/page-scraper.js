@@ -6,11 +6,26 @@ var _ = require('lodash');
 
 // private
 var externalUrlRegex = /^(https?:\/\/)(www\.)?(\w+\.?)+(\.\w{2,5}){1,2}/;
+var externalUrlRegex2 = new RegExp(''
+  + /(?:(?:(https?|ftp):)?\/\/)/.source       // protocol
+  + /((?:[^:\n\r]+):(?:[^@\n\r]+)@)?/.source  // user:pass
+  + /(?:(?:www\.)?([^\/\n\r]+))/.source       // domain
+  + /(\/[^?#\n\r]+)?/.source                   // request
+  + /(\?[^#\n\r]*)?/.source                   // query
+  + /(#?[^\n\r]*)?/.source                    // anchor
+);
 var internalUrlRegex = /^(\/?(?!mailto:)[^?#)]+)/;
 
 // public
 var pageScrape = {};
 module.exports = pageScrape;
+
+(function testRegex() {
+  var url = 'http://off.net.mk/vesti/razno/zoshto-nema-da-dobiesh-na-loto?lol=a';
+
+  console.log(externalUrlRegex2.source);
+  console.log(url.match(externalUrlRegex2));
+}());
 
 pageScrape.getLinks = function (body, response) {
   var aTags = cheerio.load(body)('a');
@@ -21,14 +36,13 @@ pageScrape.getLinks = function (body, response) {
   for (var i = 0; i < aTags.length; ++i) {
     var link = (aTags.eq(i).attr('href') || '').toLowerCase();
 
+    var externalLink = link.match(externalUrlRegex2);
     var internalLink = link.match(internalUrlRegex);
-    var externalLink = link.match(externalUrlRegex);
     if (externalLink) {
-      if (externalLink[0].indexOf(response.request.host) == -1) {
-        links.external.push(externalLink[0]);
-      } else {
-        var tempLink = externalLink.input.replace(externalLink[0], '');
-        internalLink = tempLink.match(internalUrlRegex);
+      if (externalLink[3] !== response.request.host) {
+        links.external.push(externalLink[3]);
+      } else if (externalLink[4]) {
+        internalLink = externalLink[4].match(internalUrlRegex);
       }
     } else if (internalLink) {
       var tempLink = internalLink[0].charAt(0) == '/' ? internalLink[0] : '/' + internalLink[0];
