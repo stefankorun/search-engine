@@ -26,7 +26,8 @@ var config = require('./config');
 
 //Crawler.crawlExternal(config.sites.starting);
 //Crawler.crawlExternal(_.take(_.shuffle(WebCache.getPagesList()), 2));
-Crawler.crawlOffline();
+//Crawler.crawlOffline();
+Cache.walkWordIndex();
 //Request.getPage('makfax.com.mk/ekonomija/makedonija/srpskite-turisti-s%D1%90-poveke-ja-posetuvaat-makedonija');
 
 
