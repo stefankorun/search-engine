@@ -1,13 +1,14 @@
 // requires
 var Promise = require("bluebird");
-var request = require('request');
+//var request = require('request');
 var async = require('async');
 var _ = require('lodash');
 var fs = require('fs');
 
 var config = require('../config');
 var Memory = require('../memory');
-var WebCache = require('./web-cache');
+var Cache = require('./cache');
+var Request = require('./request');
 var PageScraper = require('../page-scraper/page-scraper');
 
 var BagOfWords = require('../engine/text-processing/bagofwords');
@@ -21,22 +22,39 @@ var api = {};
 module.exports = api;
 
 // public
+api.crawlOffline = function () {
+  var urls = JSON.parse(fs.readFileSync(config.database.pagesList));
+  async.eachSeries(urls, (url, callback) => {
+    if (!Cache.hasWordIndex(url)) {
+      api.crawlInternal(url).then((data) => {
+        Cache.saveWordIndex(url, data);
+        callback(null);
+      })
+    } else {
+      callback(null);
+    }
+  }, function done() {
+    console.log('done');
+  });
+};
 api.crawlExternal = function (urls) {
   var searchIndex = new Index();
   dbGraph.clearGraph(new Function());
   var result = {};
 
+
   crawlRecursive(_.isArray(urls) ? urls : [urls], config.crawler.externalLimit);
   function crawlRecursive(urls, limit) {
-    console.log('\nEXTERNAL LEVEL %d \nTOTAL URLS: %d\n', limit, urls.length);
+    console.log('\nEXTERNAL level %d \ntotal urls: %d\n', limit, urls.length);
     var external = [];
-    urls = _.uniq(_.difference(urls, _.keys(result)));
+    urls = _.uniq(urls);
+    urls = _.difference(urls, _.keys(result));
     urls = _.differenceWith(urls, config.sites.excluded, (s1, s2) => {
       return ~s1.indexOf(s2);
     });
 
     async.eachSeries(urls, function (url, callback) {
-      request.get({uri: url}, function (error, response) {
+      Request.getPage(url, function (error, response) {
         if (PageScraper.checkLanguage('mk_MK', response)) {
           api.crawlInternal(url).then(function (data) {
             result[url] = _.omit(data, 'words');
@@ -47,13 +65,9 @@ api.crawlExternal = function (urls) {
               bagOfWords.addItem(word);
             });
             searchIndex.addData(url, bagOfWords);
-            searchIndex.saveToDatabase(() => {
-              console.log('saved');
-            });
-            dbMongo.insertUrl(url, () => {
-            });
-            dbGraph.create(url, data.external, (err) => {
-            });
+            searchIndex.saveToDatabase(new Function());
+            dbMongo.insertUrl(url, new Function());
+            dbGraph.create(url, data.external, new Function());
 
             callback(null);
           })
@@ -69,8 +83,7 @@ api.crawlExternal = function (urls) {
           pageRank.initPageRank(function (pages) {
             pages = pageRank.pageRank(pages);
             //console.log(pages);
-            pageRank.savePageRank(pageRank.pageRank(pages), function () {
-            });
+            pageRank.savePageRank(pageRank.pageRank(pages), new Function());
           });
         });
         return result;
@@ -80,7 +93,6 @@ api.crawlExternal = function (urls) {
     });
   }
 };
-
 api.crawlInternal = function (url) {
   var deferred = Promise.defer();
   var pages = {
@@ -92,14 +104,15 @@ api.crawlInternal = function (url) {
 
   crawlRecursive([url], config.crawler.internalLimit);
   function crawlRecursive(urls, limit) {
-    console.log('\nINTERNAL LEVEL %d \nTOTAL URLS: %d\n', limit, urls.length);
+    console.log('\nINTERNAL level %d \ntotal urls: %d\n', limit, urls.length);
 
     urls = _.difference(urls, pages.visited);
+    urls = _.take(urls, 200);
     throttleRequests(urls).then(function (data) {
       pages.visited = _.union(pages.visited, urls);
 
       var links = _.reduce(data, function (result, d) {
-        WebCache.savePage(d.response.request.host, d.url, d.response.body);
+        Cache.savePage(d.response.request.host.replace(/www\./g, ''), d.url, d.response.body);
 
         var responseLinks = PageScraper.getLinks(d.response);
         var contentWords = PageScraper.getContent(d.response);
@@ -132,20 +145,15 @@ function throttleRequests(urls) {
   var responses = [];
 
   async.eachLimit(urls, threshold, function (url, callback) {
-    console.log('request to:', url);
-    try {
-      request.get({uri: url, timeout: 2000, maxRedirects: 5}, function (err, res) {
-        if (!err) {
-          responses.push({
-            url: url,
-            response: res
-          });
-        }
-        callback(null);
-      });
-    } catch (ex) {
+    Request.getPage(url, function (err, res) {
+      if (!err) {
+        responses.push({
+          url: url,
+          response: res
+        });
+      }
       callback(null);
-    }
+    });
   }, function done() {
     deferred.resolve(responses);
   });

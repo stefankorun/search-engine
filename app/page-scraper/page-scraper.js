@@ -51,13 +51,10 @@ api.getLinks = function (response) {
       links.internal.push(response.request.host + tempLink);
     }
   }
-  links.external = _.chain(links.external).uniq().map(_addHttp).value();
-  links.internal = _.chain(links.internal).uniq().map(_addHttp).value();
+  links.external = _.uniq(links.external);
+  links.internal = _.uniq(links.internal);
   return links;
 
-  function _addHttp(link) {
-    return link.indexOf('http:') < 0 ? 'http://' + link : link;
-  }
 };
 
 api.getContent = function (response) {
