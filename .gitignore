@@ -1,8 +1,9 @@
 /.c9
-/.idea/workspace.xml
+/.idea
 /node_modules
 
 /db/html
 /db/mongo
+/app/_db
 
 mongod.log

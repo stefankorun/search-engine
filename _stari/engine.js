@@ -35,7 +35,6 @@ function startFileProcessing() {
     saveWordArray(data, key);
   }
 
-
   function saveWordArray(array, docID) {
     var repeatCount = {};
     array.forEach(function (word) {

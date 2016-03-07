@@ -19,11 +19,10 @@ function read() {
 
 // private
 var connected;
-
 (function init() {
   connected = connect();
 
-  save({asd: 'asd'}, {bsd: 'bsd'})
+  //save({asd: 'asd'}, {bsd: 'bsd'})
 }());
 
 function start() {

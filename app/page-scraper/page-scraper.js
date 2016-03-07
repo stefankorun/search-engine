@@ -1,8 +1,9 @@
-// requires
 var cheerio = require('cheerio');
 var request = require('request');
 var async = require("async");
 var _ = require('lodash');
+
+var config = require('../config');
 
 
 // private
@@ -18,12 +19,17 @@ var externalUrlRegex = new RegExp(''
 var internalUrlRegex = /^(\/?(?!mailto:)[^?#)]+)/;
 
 // public
-var pageScrape = {};
-module.exports = pageScrape;
+var api = {};
+module.exports = api;
 
 
-pageScrape.getLinks = function (response) {
-  var aTags = cheerio.load(response.body)('a');
+api.getLinks = function (response) {
+  try {
+    var aTags = cheerio.load(response && response.body)('a');
+  } catch (ex) {
+    console.log(ex, 'getLinks');
+    aTags = [];
+  }
   var links = {
     external: [],
     internal: []
@@ -31,18 +37,19 @@ pageScrape.getLinks = function (response) {
   for (var i = 0; i < aTags.length; ++i) {
     var link = (aTags.eq(i).attr('href') || '').toLowerCase().replace(/\s+/g, '');
 
-    var externalLink = link.match(externalUrlRegex);
-    var internalLink = link.match(internalUrlRegex);
-    if (externalLink) {
-      if (externalLink[3] !== response.request.host) {
-        links.external.push(externalLink[3]);
-      } else if (externalLink[4]) {
-        internalLink = externalLink[4].match(internalUrlRegex);
+    var isExternalLink = link.match(externalUrlRegex);
+    var isInternalLink = link.match(internalUrlRegex);
+    if (isExternalLink) {
+      if (isExternalLink[3] !== response.request.host) {
+        links.external.push(isExternalLink[3]);
+      } else if (isExternalLink[4]) {
+        isInternalLink = isExternalLink[4].match(internalUrlRegex);
+        links.internal.push(response.request.host + isInternalLink[1]);
       }
-    } else if (internalLink) {
-      var tempLink = internalLink[0].charAt(0) == '/' ? internalLink[0] : '/' + internalLink[0];
-      tempLink = 'http://' + response.request.host + tempLink;
-      links.internal.push(tempLink);
+    } else if (isInternalLink) {
+      // todo: IMPORTANT check how relative links are handled, probably bad
+      var tempLink = isInternalLink[0].charAt(0) == '/' ? isInternalLink[0] : '/' + isInternalLink[0];
+      links.internal.push(response.request.host + tempLink);
     }
   }
   links.external = _.uniq(links.external);
@@ -50,7 +57,38 @@ pageScrape.getLinks = function (response) {
   return links;
 };
 
-pageScrape.findContentDiv = function (urls) {
+api.getContent = function (response) {
+  if (!response) return [];
+  try {
+    var body = cheerio.load(response.body, {
+      normalizeWhitespace: true
+    })('body');
+  } catch (ex) {
+    console.log(ex, 'getContent');
+    return [];
+  }
+  body.find('script, :input').remove();
+  return (body.text()
+      .replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+      .toLowerCase()
+      .split(' ')
+      .filter(function (item) {
+        return item.length > 3 && item.length < 10;
+      })
+  );
+};
+
+
+api.checkLanguage = function (language, response) {
+  var content = api.getContent(response).join('').replace(/\s/g, '');
+
+  return _.reduce(content, function (res, char) {
+      return res + (config.languages[language].specialChars.indexOf(char) > -1 ? 1 : 0);
+    }, 0) > config.languages._threshold;
+};
+
+api.findContentDiv = function (urls) {
   var results = [];
   async.each(urls, function (url, callback) {
     var options = {uri: url, maxRedirects: 5};

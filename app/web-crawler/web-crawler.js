@@ -5,20 +5,127 @@ var async = require('async');
 var _ = require('lodash');
 var fs = require('fs');
 
+var config = require('../config');
 var Memory = require('../memory');
-var PageScraper = require('./page-scraper');
+var WebCache = require('./web-cache');
+var PageScraper = require('../page-scraper/page-scraper');
 
-module.exports = {
-  crawl: crawl
+var BagOfWords = require('../engine/text-processing/bagofwords');
+var Index = require('../engine/text-processing/index');
+var graph = require('../engine/dbs/db-graph');
+var dbMongo = require('../engine/dbs/db-manager').getInstance();
+var pageRank = require('../engine/text-processing/ranking');
+var queryEngine = require('../engine/query-engine/queryengine');
+
+var api = {};
+module.exports = api;
+
+// public
+api.crawlExternal = function (urls, level) {
+  var searchIndex = new Index();
+  var result = {};
+
+  crawlRecursive(_.isArray(urls) ? urls : [urls], level);
+  function crawlRecursive(urls, level) {
+    console.log('\nEXTERNAL LEVEL %d \nTOTAL URLS: %d\n', level, urls.length);
+    var external = [];
+    urls = _.uniq(_.difference(urls, _.keys(result)));
+    urls = _.differenceWith(urls, config.sites.excluded, (s1, s2) => {
+      return ~s1.indexOf(s2);
+    });
+
+    async.eachSeries(urls, function (url, callback) {
+      request.get({uri: 'http://' + url}, function (error, response) {
+        if (PageScraper.checkLanguage('mk_MK', response)) {
+          api.crawlInternal('http://' + url, 1).then(function (data) {
+            result[url] = _.omit(data, 'words');
+            external = _.union(external, data.external);
+
+            var bagOfWords = new BagOfWords();
+            _.each(data.words, (word) => {
+              bagOfWords.addItem(word);
+            });
+            searchIndex.addData(url, bagOfWords);
+            searchIndex.saveToDatabase(function () {
+              console.log('saved');
+            });
+            dbMongo.insertUrl(url, function () {
+            });
+            graph.create(url, data.external, function (err) {
+            });
+
+            callback(null);
+          })
+        } else {
+          console.log('NOT A mk_MK site', url);
+          callback(null);
+        }
+      })
+    }, function done() {
+      if (level === 0) {
+        searchIndex.saveToDatabase(function () {
+          console.log('done index');
+          pageRank.initPageRank(function (pages) {
+            pages = pageRank.pageRank(pages);
+            //console.log(pages);
+            pageRank.savePageRank(pageRank.pageRank(pages), function () {
+            });
+          });
+
+        });
+        return result;
+      } else {
+        crawlRecursive(external, level - 1)
+      }
+    });
+  }
+};
+api.crawlInternal = function (url, level) {
+  var deferred = Promise.defer();
+  var pages = {
+    external: [],
+    internal: [],
+    visited: [],
+    words: []
+  };
+
+  crawlRecursive([url], level);
+  function crawlRecursive(urls, level) {
+    console.log('\nINTERNAL LEVEL %d \nTOTAL URLS: %d\n', level, urls.length);
+
+    urls = _.difference(urls, pages.visited);
+    throttleRequests(urls).then(function (data) {
+      pages.visited = _.union(pages.visited, urls);
+
+      var links = _.reduce(data, function (result, d) {
+        WebCache.savePage(d.response.request.host, d.url, d.response.body);
+
+        var responseLinks = PageScraper.getLinks(d.response);
+        var contentWords = PageScraper.getContent(d.response);
+        result.internal = _.union(result.internal, responseLinks.internal);
+        result.external = _.union(result.external, responseLinks.external);
+        result.words = result.words.concat(contentWords); //todo: refactor
+        return result;
+      }, {internal: [], external: [], words: []});
+
+      // add to global result
+      pages.external = _.union(pages.external, links.external);
+      pages.internal = _.union(pages.internal, links.internal);
+      pages.words = pages.words.concat(links.words);
+
+      if (level === 0) {
+        deferred.resolve(pages);
+      } else {
+        crawlRecursive(links.internal, level - 1);
+      }
+    });
+  }
+
+  return deferred.promise;
 };
 
-function crawlExternal(urls) {
-  throttleRequests(urls).then(function () {
-
-  })
-}
-
-function throttleRequests(urls, transformer) {
+// private
+function throttleRequests(urls) {
   var deferred = Promise.defer();
   var threshold = 50;
   var responses = [];
@@ -26,56 +133,21 @@ function throttleRequests(urls, transformer) {
   async.eachLimit(urls, threshold, function (url, callback) {
     console.log('request to:', url);
 
-    request.get({uri: url, maxRedirects: 5}, function (error, res) {
-      responses.push({
-        url: url,
-        response: res,
-        transformed: (transformer && !error && res.statusCode == 200) ? transformer(res) : null
+    try {
+      request.get({uri: url, timeout: 2000, maxRedirects: 5}, function (err, res) {
+        if (!err) {
+          responses.push({
+            url: url,
+            response: res
+          });
+        }
+        callback(null);
       });
+    } catch (ex) {
       callback(null);
-    });
-  }, function () {
+    }
+  }, function done() {
     deferred.resolve(responses);
   });
   return deferred.promise;
 }
-
-
-// public
-function crawl(url) {
-  var pagesFound = {
-    external: [],
-    visited: []
-  };
-
-  startCrawl(_.isArray(url) ? url : [url], 1);
-
-  function startCrawl(urls, level) {
-    var pagesInternal = [];
-    urls = _.difference(urls, pagesFound.visited);
-
-    console.log('\n\nSTARTING LEVEL %d \nTOTAL URLS: %d\n', level, urls.length);
-    throttleRequests(urls, PageScraper.getLinks).then(function (responses) {
-      pagesFound.visited = _.union(pagesFound.visited, urls);
-
-      //var a = _.reduce(responses, function (res, r) {
-      //  return {
-      //    external: _.union(res.external, r.transformed.external),
-      //    internal: _.union(res.internal, r.transformed.internal)
-      //  }
-      //}, {});
-      //console.log(responses);
-
-      if (level === 0) {
-        console.log('Done, saving to db', pagesInternal);
-        Memory.Mongo.save({base: url}, {pages: pagesFound});
-        return pagesFound;
-      } else {
-        startCrawl(pagesInternal, level - 1);
-      }
-    });
-  }
-}
-
-
-// private
