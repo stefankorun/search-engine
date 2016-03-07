@@ -1,4 +1,8 @@
 module.exports = {
+  crawler: {
+    externalLimit: 20,
+    internalLimit: 1
+  },
   sites: {
     excluded: [
       'wikipedia.org',

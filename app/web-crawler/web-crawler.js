@@ -12,7 +12,7 @@ var PageScraper = require('../page-scraper/page-scraper');
 
 var BagOfWords = require('../engine/text-processing/bagofwords');
 var Index = require('../engine/text-processing/index');
-var graph = require('../engine/dbs/db-graph');
+var dbGraph = require('../engine/dbs/db-graph');
 var dbMongo = require('../engine/dbs/db-manager').getInstance();
 var pageRank = require('../engine/text-processing/ranking');
 var queryEngine = require('../engine/query-engine/queryengine');
@@ -21,13 +21,14 @@ var api = {};
 module.exports = api;
 
 // public
-api.crawlExternal = function (urls, level) {
+api.crawlExternal = function (urls) {
   var searchIndex = new Index();
+  dbGraph.clearGraph(new Function());
   var result = {};
 
-  crawlRecursive(_.isArray(urls) ? urls : [urls], level);
-  function crawlRecursive(urls, level) {
-    console.log('\nEXTERNAL LEVEL %d \nTOTAL URLS: %d\n', level, urls.length);
+  crawlRecursive(_.isArray(urls) ? urls : [urls], config.crawler.externalLimit);
+  function crawlRecursive(urls, limit) {
+    console.log('\nEXTERNAL LEVEL %d \nTOTAL URLS: %d\n', limit, urls.length);
     var external = [];
     urls = _.uniq(_.difference(urls, _.keys(result)));
     urls = _.differenceWith(urls, config.sites.excluded, (s1, s2) => {
@@ -35,9 +36,9 @@ api.crawlExternal = function (urls, level) {
     });
 
     async.eachSeries(urls, function (url, callback) {
-      request.get({uri: 'http://' + url}, function (error, response) {
+      request.get({uri: url}, function (error, response) {
         if (PageScraper.checkLanguage('mk_MK', response)) {
-          api.crawlInternal('http://' + url, 1).then(function (data) {
+          api.crawlInternal(url).then(function (data) {
             result[url] = _.omit(data, 'words');
             external = _.union(external, data.external);
 
@@ -46,12 +47,12 @@ api.crawlExternal = function (urls, level) {
               bagOfWords.addItem(word);
             });
             searchIndex.addData(url, bagOfWords);
-            searchIndex.saveToDatabase(function () {
+            searchIndex.saveToDatabase(() => {
               console.log('saved');
             });
-            dbMongo.insertUrl(url, function () {
+            dbMongo.insertUrl(url, () => {
             });
-            graph.create(url, data.external, function (err) {
+            dbGraph.create(url, data.external, (err) => {
             });
 
             callback(null);
@@ -62,7 +63,7 @@ api.crawlExternal = function (urls, level) {
         }
       })
     }, function done() {
-      if (level === 0) {
+      if (limit === 0) {
         searchIndex.saveToDatabase(function () {
           console.log('done index');
           pageRank.initPageRank(function (pages) {
@@ -71,16 +72,16 @@ api.crawlExternal = function (urls, level) {
             pageRank.savePageRank(pageRank.pageRank(pages), function () {
             });
           });
-
         });
         return result;
       } else {
-        crawlRecursive(external, level - 1)
+        crawlRecursive(external, limit - 1)
       }
     });
   }
 };
-api.crawlInternal = function (url, level) {
+
+api.crawlInternal = function (url) {
   var deferred = Promise.defer();
   var pages = {
     external: [],
@@ -89,9 +90,9 @@ api.crawlInternal = function (url, level) {
     words: []
   };
 
-  crawlRecursive([url], level);
-  function crawlRecursive(urls, level) {
-    console.log('\nINTERNAL LEVEL %d \nTOTAL URLS: %d\n', level, urls.length);
+  crawlRecursive([url], config.crawler.internalLimit);
+  function crawlRecursive(urls, limit) {
+    console.log('\nINTERNAL LEVEL %d \nTOTAL URLS: %d\n', limit, urls.length);
 
     urls = _.difference(urls, pages.visited);
     throttleRequests(urls).then(function (data) {
@@ -113,10 +114,10 @@ api.crawlInternal = function (url, level) {
       pages.internal = _.union(pages.internal, links.internal);
       pages.words = pages.words.concat(links.words);
 
-      if (level === 0) {
+      if (limit === 0) {
         deferred.resolve(pages);
       } else {
-        crawlRecursive(links.internal, level - 1);
+        crawlRecursive(links.internal, limit - 1);
       }
     });
   }
@@ -132,7 +133,6 @@ function throttleRequests(urls) {
 
   async.eachLimit(urls, threshold, function (url, callback) {
     console.log('request to:', url);
-
     try {
       request.get({uri: url, timeout: 2000, maxRedirects: 5}, function (err, res) {
         if (!err) {

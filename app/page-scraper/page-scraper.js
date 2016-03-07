@@ -7,7 +7,6 @@ var config = require('../config');
 
 
 // private
-var externalUrlRegexOld = /^(https?:\/\/)(www\.)?(\w+\.?)+(\.\w{2,5}){1,2}/;
 var externalUrlRegex = new RegExp(''
   + /(?:(?:(https?|ftp):)?\/\/)/.source       // protocol
   + /((?:[^:\n\r]+):(?:[^@\n\r]+)@)?/.source  // user:pass
@@ -16,7 +15,7 @@ var externalUrlRegex = new RegExp(''
   + /(\?[^#\n\r]*)?/.source                   // query
   + /(#?[^\n\r]*)?/.source                    // anchor
 );
-var internalUrlRegex = /^(\/?(?!mailto:)[^?#)]+)/;
+var internalUrlRegex = /^(\/?(?!(mailto:|javascript:))[^?#)]+)/;
 
 // public
 var api = {};
@@ -52,9 +51,13 @@ api.getLinks = function (response) {
       links.internal.push(response.request.host + tempLink);
     }
   }
-  links.external = _.uniq(links.external);
-  links.internal = _.uniq(links.internal);
+  links.external = _.chain(links.external).uniq().map(_addHttp).value();
+  links.internal = _.chain(links.internal).uniq().map(_addHttp).value();
   return links;
+
+  function _addHttp(link) {
+    return link.indexOf('http:') < 0 ? 'http://' + link : link;
+  }
 };
 
 api.getContent = function (response) {
@@ -68,7 +71,8 @@ api.getContent = function (response) {
     return [];
   }
   body.find('script, :input').remove();
-  return (body.text()
+  return (
+    body.text()
       .replace(/[`„“”~!@#$%^&*()_|+\-=?;:'",.\n\r<>\{}\[\]\\\/\d]/g, ' ')
       .replace(/\s{2,}/g, ' ')
       .toLowerCase()
@@ -78,7 +82,6 @@ api.getContent = function (response) {
       })
   );
 };
-
 
 api.checkLanguage = function (language, response) {
   var content = api.getContent(response).join('').replace(/\s/g, '');

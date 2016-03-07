@@ -1,7 +1,7 @@
 var neo4j = require('neo4j'),
-    config = require('../config/config').graphdb;
-    db = new neo4j.GraphDatabase(config.URL),
-    _ = require('lodash');
+  config = require('../config/config').graphdb;
+db = new neo4j.GraphDatabase(config.URL),
+  _ = require('lodash');
 
 var grNodes = [];
 
@@ -241,10 +241,20 @@ deleteNode = function (url, callback) {
   })
 };
 
+clearGraph = function (callback) {
+  db.query('MATCH (n) DETACH DELETE n', function(err, results) {
+    if(err) {
+      console.log(err);
+    } else {
+      callback(results)
+    }
+  })
+};
+
 exports.deleteNode = deleteNode;
 exports.grNodes = grNodes;
 exports.createGraph = createGraph;
 exports.inNodes = inNodes;
 exports.numOutLinks = numOutLinks;
 exports.create = create;
-
+exports.clearGraph = clearGraph;

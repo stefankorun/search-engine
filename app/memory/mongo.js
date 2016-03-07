@@ -21,7 +21,6 @@ function read() {
 var connected;
 (function init() {
   connected = connect();
-
   //save({asd: 'asd'}, {bsd: 'bsd'})
 }());
 

@@ -23,5 +23,5 @@ var pageRank = require('./engine/text-processing/ranking');
 //});
 //console.log(queryEngine.evaluate('лаптоп'));
 
-WebCrawler.crawlExternal('set.mk', 10);
+WebCrawler.crawlExternal('http://off.net.mk');
 
