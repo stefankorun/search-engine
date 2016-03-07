@@ -27,6 +27,7 @@ api.crawlOffline = function () {
   async.eachSeries(urls, (url, callback) => {
     if (!Cache.hasWordIndex(url)) {
       api.crawlInternal(url).then((data) => {
+        console.log('saving word index');
         Cache.saveWordIndex(url, data);
         callback(null);
       })
