@@ -7,6 +7,7 @@ module.exports = {
   crawler: {
     externalLimit: 20,
     internalLimit: 2
+
   },
   sites: {
     starting: [
@@ -18,18 +19,21 @@ module.exports = {
       //'sport.com.mk',
       //'ohridnews.com'
     ],
-    excluded: [
-      'wikipedia.org',
-      'wikipedia.com',
-      'twitter.com',
-      'mapas.mk',
-      'youtube.com',
-      'youtu.be',
-      'facebook.com',
-      'buzzfeed.com',
-      'markukule.mk',
-      'imdb.com'
-    ]
+    excluded: {
+      extensions: /\.(pdf|docx?|mp3|mp4|jpeg|png)/,
+      domains: [
+        'wikipedia.org',
+        'wikipedia.com',
+        'twitter.com',
+        'mapas.mk',
+        'youtube.com',
+        'youtu.be',
+        'facebook.com',
+        'buzzfeed.com',
+        'markukule.mk',
+        'imdb.com'
+      ]
+    }
   },
   languages: {
     _threshold: 1,

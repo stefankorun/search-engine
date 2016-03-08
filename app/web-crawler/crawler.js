@@ -105,10 +105,12 @@ api.crawlInternal = function (url) {
 
   crawlRecursive([url], config.crawler.internalLimit);
   function crawlRecursive(urls, limit) {
-    console.log('\nINTERNAL level %d \ntotal urls: %d\n', limit, urls.length);
-
+    urls = _.filter(urls, url => url.match(config.sites.excluded.extensions) === null)
+    ;
     urls = _.difference(urls, pages.visited);
     urls = _.take(urls, 200);
+    console.log('\nINTERNAL level %d \ntotal urls: %d\n', limit, urls.length);
+
     throttleRequests(urls).then(function (data) {
       pages.visited = _.union(pages.visited, urls);
 
@@ -142,7 +144,7 @@ api.crawlInternal = function (url) {
 // private
 function throttleRequests(urls) {
   var deferred = Promise.defer();
-  var threshold = 50;
+  var threshold = 20;
   var responses = [];
 
   async.eachLimit(urls, threshold, function (url, callback) {

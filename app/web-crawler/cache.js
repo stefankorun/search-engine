@@ -26,6 +26,11 @@ api.hasWordIndex = function (domain) {
 
   return fse.existsSync(path.join(wordsCache, hash));
 };
+api.getWordIndex = function (domain) {
+  var hash = crypto.createHash('md5').update(domain).digest('hex');
+
+  return fse.readFileSync(path.join(wordsCache, hash));
+};
 api.walkWordIndex = function (callback) {
   var files = getFiles(wordsCache);
   _.each(files, (f)=> {
