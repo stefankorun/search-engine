@@ -33,7 +33,7 @@ module.exports = {
         'markukule.mk',
         'imdb.com',
         'ipon.mk',
-        'http://slobodenprostor.wordpress.com/'
+        'files.wordpress.com'
       ]
     }
   },

@@ -1,7 +1,8 @@
 var graph = require('../dbs/db-graph'),
   config = require('../config/config'),
   db = require('../dbs/db-manager').getInstance(),
-  _ = require('underscore');
+  _ = require('underscore'),
+  Promise = require('bluebird');
 
 function getUrls(callback) {
   db.findUrls({}, function(err, res) {
@@ -52,7 +53,7 @@ exports.initPageRank = function (callback) {
 
 //d - dumping factor - config
 //ITERATIONS - config
-exports.pageRank = function (pages) {
+var pageRank = function (pages) {
   //TODO da go zacuvam page rankov vo baza
   var d = config.pageRank.DUMPING_FACTOR;
   var iterations = config.pageRank.ITERATIONS;
@@ -61,10 +62,12 @@ exports.pageRank = function (pages) {
   for(var i = 0; i < iterations; i++){
     for(var page in pages){
       sumPrs = 0;
-      inLinks = pages[page].inLinks;
+      inLinks = pages[page] && pages[page].inLinks || [];
 
       for(var j = 0; j < inLinks.length; j++){
-        sumPrs += (pages[inLinks[j]].PageRank / pages[inLinks[j]].numOutLinks);
+        if(pages[inLinks[j]] && pages[inLinks[j]].numOutLinks && pages[inLinks[j]].numOutLinks > 0) {
+          sumPrs +=pages[inLinks[j]].PageRank / pages[inLinks[j]].numOutLinks;
+        }
       }
 
       pr = (1 - d) + d * sumPrs;
@@ -73,7 +76,19 @@ exports.pageRank = function (pages) {
   }
   return pages;
 };
+exports.pageRank = pageRank;
 
-exports.savePageRank = function(pageRank, callback) {
+function savePageRank(pageRank, callback) {
   db.savePageRank(pageRank, callback)
+}
+exports.savePageRank = savePageRank;
+
+exports.calculate = function() {
+  db.getPages().then(function(pages) {
+    console.log(pages);
+    var pr = pageRank(pages);
+    db.savePageRank(pr, function(res) {
+      console.log(res);
+    });
+  })
 };

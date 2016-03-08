@@ -1,3 +1,6 @@
+var Promise = require("bluebird");
+Promise.promisifyAll(require('mongodb'));
+
 var dbManager = (function () {
 
   var instance;
@@ -103,17 +106,17 @@ var dbManager = (function () {
         MongoClient.connect(connURL, function (err, db) {
           var collection = db.collection(dbCfg.COLLECTIONS.CONFIG);
           collection.find().toArray(function (err, result) {
-            if(err){
+            if (err) {
               console.log('Error reading config. ' + err);
               callback(err, null);
             }
-            else{
+            else {
               var configRes = {docID: 0, start: 1};
               result.forEach(function (res) {
-                if(res.docID != undefined){
+                if (res.docID != undefined) {
                   configRes.docID = {_id: res._id, id: res.docID};
                 }
-                else if(res.start != undefined){
+                else if (res.start != undefined) {
                   configRes.start = {_id: res._id, start: res.start};
                 }
               });
@@ -175,36 +178,36 @@ var dbManager = (function () {
       saveIndex: function (index, callback) {
         MongoClient.connect(connURL, function (err, db) {
           var collection = db.collection(dbCfg.COLLECTIONS.INDEX);
-          collection.deleteMany({}, function(err,res) {
+          collection.deleteMany({}, function (err, res) {
             var batch = collection.initializeUnorderedBulkOp({useLegacyOps: true});
 
-            _.each(index, function(i) {
+            _.each(index, function (i) {
               batch.insert(i);
             });
 
             // Execute the operations
-            batch.execute(function(err, result) {
+            batch.execute(function (err, result) {
               db.close();
               callback(err, result);
-              collection.createIndex( { keyword: "text" } )
+              collection.createIndex({keyword: "text"})
             });
           });
 
         });
       },
 
-      savePageRank: function(pageRank, callback) {
+      savePageRank: function (pageRank, callback) {
         MongoClient.connect(connURL, function (err, db) {
           var collection = db.collection(dbCfg.COLLECTIONS.PAGE_RANK);
-          collection.deleteMany({}, function() {
+          collection.deleteMany({}, function () {
             var batch = collection.initializeUnorderedBulkOp({useLegacyOps: true});
 
-            _.each(lodash.values(pageRank), function(pr) {
+            _.each(lodash.values(pageRank), function (pr) {
               batch.insert(pr);
             });
 
             // Execute the operations
-            batch.execute(function(err, result) {
+            batch.execute(function (err, result) {
               db.close();
               callback(err, result);
             });
@@ -212,7 +215,7 @@ var dbManager = (function () {
         });
       },
 
-      queryResults: function(query) {
+      queryResults: function (query) {
         MongoClient.connect(connURL, function (err, db) {
           var collection = db.collection(dbCfg.COLLECTIONS.INDEX);
           var cursor = collection.find({
@@ -221,11 +224,10 @@ var dbManager = (function () {
             }
           });
 
-          cursor.toArray(function(err, res){
-            if(err) {
+          cursor.toArray(function (err, res) {
+            if (err) {
               console.log(err);
             } else {
-              console.log(_.uniq(_.pluck(_.flatten(_.pluck(res, 'index')), 'i')), 'i');
               var pageRankCollection = db.collection(dbCfg.COLLECTIONS.PAGE_RANK);
               var pgCursor = pageRankCollection.find({
                 pageID: {
@@ -233,11 +235,11 @@ var dbManager = (function () {
                 }
               });
               var indexes = _.flatten(_.pluck(res, 'index'));
-              pgCursor.toArray(function(err, result) {
-                var searchResults =_.map(result, function(pr) {
-                  var score =_.reduce(_.filter(indexes, function(index) {
+              pgCursor.toArray(function (err, result) {
+                var searchResults = _.map(result, function (pr) {
+                  var score = _.reduce(_.filter(indexes, function (index) {
                     return index.i == pr.pageID;
-                  }), function(memo, i) {
+                  }), function (memo, i) {
                     return memo + (pr.PageRank * i.w);
                   }, 0);
 
@@ -247,20 +249,61 @@ var dbManager = (function () {
                   };
                 });
 
-                var sortedSearch = searchResults.sort(function(a,b) {
+                var sortedSearch = searchResults.sort(function (a, b) {
                   return b.score - a.score;
                 });
 
                 console.log('=================================================');
                 console.log('=======РЕЗУЛТАТИТЕ ОД ВАШЕТО ПРЕБАРУВАЊЕ=========');
                 console.log('=================================================');
-                _.each(sortedSearch, function(searchResult) {
+                _.each(_.take(sortedSearch, 10), function (searchResult) {
                   console.log(searchResult.page, ' ', searchResult.score);
                 })
 
               });
             }
           })
+        });
+      },
+
+      updatePageInLink: function (page, inLinks) {
+        return MongoClient.connectAsync(connURL).then(function (db) {
+          var collection = db.collection(dbCfg.COLLECTIONS.PAGES);
+          collection.updateMany(
+            {pageID: {$in: inLinks}},
+            {$addToSet: {inLinks: page}},
+            {upsert: true, safe: false},
+            function (err, res) {
+              //console.log(err, res)
+            })
+        });
+      },
+
+      updatePageOutLinks: function (page, numOutLnks) {
+        return MongoClient.connectAsync(connURL).then(function (db) {
+          return db.collection(dbCfg.COLLECTIONS.PAGES).updateOneAsync(
+            {pageID: page},
+            {$set: {numOutLinks: numOutLnks}},
+            {upsert: true, safe: false}
+          )
+        });
+      },
+
+      getPages: function () {
+        return MongoClient.connectAsync(connURL).then(function (db) {
+          return db.collection(dbCfg.COLLECTIONS.PAGES).findAsync({}).then(function (readable) {
+            return readable.toArray().then(function (res) {
+              var pages = {};
+              _.each(res, function (page) {
+                var pg = _.clone(page);
+                pg.PageRank = 1;
+                pg.numOutLinks = pg.numOutLinks ? pg.numOutLinks : 0;
+                pg.inLinks = pg.inLinks ? pg.inLinks : [];
+                pages[page.pageID] = pg;
+              });
+              return pages;
+            });
+          });
         });
       }
 

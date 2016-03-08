@@ -1,10 +1,4 @@
-// Application config
-//['http://moebebe.com.mk', 'http://www.ringeraja.mk', 'http://time.mk', 'http://ohridnews.com']
 exports.seCfg = {
-  START_PAGES: [
-    {url: 'http://kadevecer.com.mk', done: false, docID: 0, pr: 1},
-    {url: 'http://duna.mk', done:false, docID: 0, pr: 1}
-  ],
   DOCUMENTS_DIR: '../documents',
   LANGUAGE_THRESHOLD: 0.6
 };
@@ -22,7 +16,8 @@ exports.db = {
     CONFIG: 'config',
     WORDS: 'words',
     INDEX: 'index',
-    PAGE_RANK: 'page_rank'
+    PAGE_RANK: 'page_rank',
+    PAGES: 'pages'
   }
 };
 
