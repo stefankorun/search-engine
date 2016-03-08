@@ -24,6 +24,9 @@ module.exports = api;
 // public
 api.crawlOffline = function () {
   var urls = JSON.parse(fs.readFileSync(config.database.pagesList));
+  urls = _.differenceWith(urls, config.sites.excluded.domains, (s1, s2) => {
+    return ~s1.indexOf(s2);
+  });
   async.eachSeries(urls, (url, callback) => {
     if (!Cache.hasWordIndex(url)) {
       api.crawlInternal(url).then((data) => {
@@ -50,7 +53,7 @@ api.crawlExternal = function (urls) {
     var external = [];
     urls = _.uniq(urls);
     urls = _.difference(urls, _.keys(result));
-    urls = _.differenceWith(urls, config.sites.excluded, (s1, s2) => {
+    urls = _.differenceWith(urls, config.sites.excluded.domains, (s1, s2) => {
       return ~s1.indexOf(s2);
     });
 

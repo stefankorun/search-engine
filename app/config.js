@@ -20,7 +20,7 @@ module.exports = {
       //'ohridnews.com'
     ],
     excluded: {
-      extensions: /\.(pdf|docx?|mp3|mp4|jpeg|png)/,
+      extensions: /\.(pdf|docx?|mp3|mp4|jpg|jpeg|png)/,
       domains: [
         'wikipedia.org',
         'wikipedia.com',
@@ -31,7 +31,9 @@ module.exports = {
         'facebook.com',
         'buzzfeed.com',
         'markukule.mk',
-        'imdb.com'
+        'imdb.com',
+        'ipon.mk',
+        'http://slobodenprostor.wordpress.com/'
       ]
     }
   },
