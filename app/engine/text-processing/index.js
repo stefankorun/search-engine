@@ -2,19 +2,9 @@ var Documents = require('./documents'),
   math = require('mathjs'),
   graph = require('../dbs/db-graph'),
   config = require('../config/config'),
-  db = require('../dbs/db-manager').getInstance();
+  db = require('../dbs/db-mongo').getInstance();
   logTf = 0;
 
-/*
-* prvo tf pa idf pa normalizacija pa pagerank
-*
-* {
-*   word0: {docID: id, tf-idf: weight},
-*   word1: {...}, ...
-* }
-*
-*
-* */
 
 var Index = function() {
   this.index = {};

@@ -1,6 +1,6 @@
 var graph = require('../dbs/db-graph'),
   config = require('../config/config'),
-  db = require('../dbs/db-manager').getInstance(),
+  db = require('../dbs/db-mongo').getInstance(),
   _ = require('underscore'),
   Promise = require('bluebird');
 
@@ -14,47 +14,9 @@ function getUrls(callback) {
   })
 }
 
-exports.initPageRank = function (callback) {
-
-  getUrls(function(res) {
-
-    var result = res;
-    var pages = {}, counter = 0, end = 0;
-    //var result = ['A', 'B', 'C'];
-    for(var i = 0; i < result.length; i++){
-      graph.inNodes(result[i], i, function (err, res, index) {
-        if(err){
-          console.log("Error: " + err);
-          return;
-        }
-        var inLinks = [];
-        for(var j = 0; j < res.length; j++){
-          inLinks.push(res[j].a.data.url);
-        }
-        //console.log(result[index], index);
-        pages[result[index]] = {pageID: result[index], inLinks: inLinks, PageRank: 1, numOutLinks: 0};
-        graph.numOutLinks(result[index], index, function (err, gResult) {
-          end++;
-          if(err){
-            console.log(err + " " + index);
-            return;
-          }
-          pages[result[gResult.index]].numOutLinks = gResult.count;
-          if(end == result.length){
-            callback(pages);
-          }
-        });
-      });
-    }
-
-  console.log('page rank')
-  });
-};
-
 //d - dumping factor - config
 //ITERATIONS - config
 var pageRank = function (pages) {
-  //TODO da go zacuvam page rankov vo baza
   var d = config.pageRank.DUMPING_FACTOR;
   var iterations = config.pageRank.ITERATIONS;
   var pr = 1, sumPrs = 0, inLinks = [];

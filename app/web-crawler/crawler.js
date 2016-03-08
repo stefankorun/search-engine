@@ -14,9 +14,9 @@ var PageScraper = require('../page-scraper/page-scraper');
 var BagOfWords = require('../engine/text-processing/bagofwords');
 var Index = require('../engine/text-processing/index');
 var dbGraph = require('../engine/dbs/db-graph');
-var dbMongo = require('../engine/dbs/db-manager').getInstance();
+var dbMongo = require('../engine/dbs/db-mongo').getInstance();
 var pageRank = require('../engine/text-processing/ranking');
-var queryEngine = require('../engine/query-engine/queryengine');
+var queryEngine = require('../engine/query-engine/query-engine');
 
 var api = {};
 module.exports = api;

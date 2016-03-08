@@ -8,16 +8,16 @@ exports.db = {
   USER: '',
   PASS: '',
   PORT: 27017,
-  DB_NAME: 'sedb',
+  DB_NAME: 'search-engine-3',
   HOST: '127.0.0.1',
-  URL: 'mongodb://localhost:27017/sedb',
+  URL: 'mongodb://localhost:27017/search-engine-3',
   COLLECTIONS: {
     URLS: 'urls',
     CONFIG: 'config',
     WORDS: 'words',
-    INDEX: 'index',
-    PAGE_RANK: 'page_rank',
-    PAGES: 'pages'
+    INDEX: 'word-index',
+    PAGE_RANK: 'ranking',
+    PAGES: 'domains'
   }
 };
 
@@ -35,6 +35,6 @@ exports.crawler = {
 };
 
 exports.pageRank = {
-  DUMPING_FACTOR: 0.85,
-  ITERATIONS: 12
+  DUMPING_FACTOR: 0.75,
+  ITERATIONS: 20
 };

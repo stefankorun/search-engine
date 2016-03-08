@@ -253,11 +253,9 @@ var dbManager = (function () {
                   return b.score - a.score;
                 });
 
-                console.log('=================================================');
-                console.log('=======РЕЗУЛТАТИТЕ ОД ВАШЕТО ПРЕБАРУВАЊЕ=========');
-                console.log('=================================================');
+                console.log('\n\n search results:');
                 _.each(_.take(sortedSearch, 10), function (searchResult) {
-                  console.log(searchResult.page, ' ', searchResult.score);
+                  console.log([searchResult.page, searchResult.score]);
                 })
 
               });
